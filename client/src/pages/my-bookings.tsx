@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type BookingWithZoomAccount = {
   id: number;
@@ -51,9 +51,16 @@ export default function MyBookings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: bookings, isLoading } = useQuery<BookingWithZoomAccount[]>({
+  const { data: bookings, isLoading, refetch } = useQuery<BookingWithZoomAccount[]>({
     queryKey: ["/api/bookings"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+  
+  // Ensure data is updated when the component mounts or when redirected here
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
   
   const cancelMutation = useMutation({
     mutationFn: async (id: number) => {

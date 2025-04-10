@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { ZoomAccount } from "@shared/schema";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CredentialsModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function CredentialsModal({
   meetingDetails,
 }: CredentialsModalProps) {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   if (!zoomAccount || !meetingDetails) {
     return null;
@@ -90,6 +92,9 @@ export function CredentialsModal({
         <DialogFooter>
           <Button 
             onClick={() => {
+              // Invalidate the bookings query to ensure fresh data
+              queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
               onOpenChange(false);
               setLocation("/bookings");
             }}
