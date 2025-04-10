@@ -25,9 +25,6 @@ const bookingFormSchema = z.object({
   endTime: z.string().min(1, "Waktu selesai wajib diisi"),
   participants: z.coerce.number().min(1, "Minimal 1 peserta diperlukan"),
   purpose: z.string().min(5, "Tujuan harus minimal 5 karakter"),
-  needsRecording: z.boolean().default(false),
-  needsBreakoutRooms: z.boolean().default(false),
-  needsPolls: z.boolean().default(false),
 }).refine(data => {
   if (data.startTime >= data.endTime) {
     return false;
@@ -59,9 +56,6 @@ export default function RequestForm() {
       endTime: "",
       participants: 1,
       purpose: "",
-      needsRecording: false,
-      needsBreakoutRooms: false,
-      needsPolls: false,
     },
   });
   
@@ -220,65 +214,6 @@ export default function RequestForm() {
                       </FormItem>
                     )}
                   />
-                  
-                  <div>
-                    <FormLabel>Fitur yang Dibutuhkan</FormLabel>
-                    <div className="mt-2 space-y-2">
-                      <FormField
-                        control={form.control}
-                        name="needsRecording"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Perekaman</FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="needsBreakoutRooms"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Ruang Diskusi</FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="needsPolls"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Polling</FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
                   
                   <div className="pt-4 flex justify-end space-x-3">
                     <Button type="button" variant="outline" asChild>
