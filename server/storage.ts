@@ -10,9 +10,12 @@ import {
   type InsertBooking
 } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { pool } from "./db";
+import { eq, and, or, not, gte, lte, desc, asc } from "drizzle-orm";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User operations
@@ -38,104 +41,89 @@ export interface IStorage {
   sessionStore: session.SessionStore;
 }
 
-export class MemStorage implements IStorage {
-  // Storage maps
-  private users: Map<number, User>;
-  private zoomAccounts: Map<number, ZoomAccount>;
-  private bookings: Map<number, Booking>;
-  
-  // Counters for IDs
-  private userIdCounter: number;
-  private zoomAccountIdCounter: number;
-  private bookingIdCounter: number;
-  
+export class DatabaseStorage implements IStorage {
   // Session store
   sessionStore: session.SessionStore;
   
   constructor() {
-    this.users = new Map();
-    this.zoomAccounts = new Map();
-    this.bookings = new Map();
-    
-    this.userIdCounter = 1;
-    this.zoomAccountIdCounter = 1;
-    this.bookingIdCounter = 1;
-    
-    this.initializeZoomAccounts();
-
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000, // Prune expired entries every 24h
+    this.sessionStore = new PostgresSessionStore({ 
+      pool,
+      createTableIfMissing: true
     });
+    
+    // Ensure we have 20 Zoom accounts in the database
+    this.initializeZoomAccounts();
   }
   
-  private initializeZoomAccounts() {
-    // Initialize 20 Zoom accounts
-    for (let i = 1; i <= 20; i++) {
-      const account: InsertZoomAccount = {
-        name: `Zoom Account ${i}`,
-        username: `zoom${i}@company.com`,
-        password: `SecurePassword${i}!`,
-        isActive: true
-      };
-      this.createZoomAccount(account);
+  private async initializeZoomAccounts() {
+    // Check if we already have Zoom accounts
+    const existingAccounts = await db.select().from(zoomAccounts);
+    
+    if (existingAccounts.length === 0) {
+      // Initialize 20 Zoom accounts
+      for (let i = 1; i <= 20; i++) {
+        const account: InsertZoomAccount = {
+          name: `Zoom Account ${i}`,
+          username: `zoom${i}@company.com`,
+          password: `SecurePassword${i}!`,
+          isActive: true
+        };
+        await this.createZoomAccount(account);
+      }
     }
   }
   
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
   
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
   
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
   
   // Zoom account operations
   async getZoomAccount(id: number): Promise<ZoomAccount | undefined> {
-    return this.zoomAccounts.get(id);
+    const [account] = await db.select().from(zoomAccounts).where(eq(zoomAccounts.id, id));
+    return account;
   }
   
   async getAllZoomAccounts(): Promise<ZoomAccount[]> {
-    return Array.from(this.zoomAccounts.values());
+    return await db.select().from(zoomAccounts);
   }
   
   async createZoomAccount(account: InsertZoomAccount): Promise<ZoomAccount> {
-    const id = this.zoomAccountIdCounter++;
-    const zoomAccount: ZoomAccount = { ...account, id };
-    this.zoomAccounts.set(id, zoomAccount);
+    const [zoomAccount] = await db.insert(zoomAccounts).values(account).returning();
     return zoomAccount;
   }
   
   async updateZoomAccount(id: number, updates: Partial<ZoomAccount>): Promise<ZoomAccount | undefined> {
-    const account = this.zoomAccounts.get(id);
-    if (!account) return undefined;
+    const [updatedAccount] = await db
+      .update(zoomAccounts)
+      .set(updates)
+      .where(eq(zoomAccounts.id, id))
+      .returning();
     
-    const updatedAccount = { ...account, ...updates };
-    this.zoomAccounts.set(id, updatedAccount);
     return updatedAccount;
   }
   
   // Booking operations
   async createBooking(insertBooking: InsertBooking): Promise<Booking> {
-    const id = this.bookingIdCounter++;
-    const now = new Date();
-    
-    const booking: Booking = {
-      ...insertBooking,
-      id,
-      zoomAccountId: null, // Will be assigned later
-      status: "pending",
-      createdAt: now
-    };
+    // Create the booking first with pending status and no zoom account
+    const [booking] = await db.insert(bookings)
+      .values({
+        ...insertBooking,
+        zoomAccountId: null,
+        status: "pending"
+      })
+      .returning();
     
     // Find available Zoom account
     const availableAccount = await this.getAvailableZoomAccount(
@@ -145,58 +133,74 @@ export class MemStorage implements IStorage {
     );
     
     if (availableAccount) {
-      booking.zoomAccountId = availableAccount.id;
-      booking.status = "confirmed";
+      // Update the booking with the available zoom account
+      const [updatedBooking] = await db.update(bookings)
+        .set({
+          zoomAccountId: availableAccount.id,
+          status: "confirmed"
+        })
+        .where(eq(bookings.id, booking.id))
+        .returning();
+      
+      return updatedBooking;
     }
     
-    this.bookings.set(id, booking);
     return booking;
   }
   
   async getBooking(id: number): Promise<Booking | undefined> {
-    return this.bookings.get(id);
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
+    return booking;
   }
   
   async getBookingsByUserId(userId: number): Promise<Booking[]> {
-    return Array.from(this.bookings.values()).filter(
-      (booking) => booking.userId === userId
-    );
+    return await db.select()
+      .from(bookings)
+      .where(eq(bookings.userId, userId))
+      .orderBy(desc(bookings.createdAt));
   }
   
   async getAllBookings(): Promise<Booking[]> {
-    return Array.from(this.bookings.values());
+    return await db.select().from(bookings);
   }
   
   async updateBooking(id: number, updates: Partial<Booking>): Promise<Booking | undefined> {
-    const booking = this.bookings.get(id);
-    if (!booking) return undefined;
+    const [updatedBooking] = await db
+      .update(bookings)
+      .set(updates)
+      .where(eq(bookings.id, id))
+      .returning();
     
-    const updatedBooking = { ...booking, ...updates };
-    this.bookings.set(id, updatedBooking);
     return updatedBooking;
   }
   
   async getAvailableZoomAccount(date: string, startTime: string, endTime: string): Promise<ZoomAccount | undefined> {
     // Get all active Zoom accounts
-    const activeAccounts = Array.from(this.zoomAccounts.values()).filter(
-      (account) => account.isActive
-    );
+    const activeAccounts = await db.select()
+      .from(zoomAccounts)
+      .where(eq(zoomAccounts.isActive, true));
     
-    // Get all confirmed bookings for the given date
-    const bookingsOnDate = Array.from(this.bookings.values()).filter(
-      (booking) => booking.meetingDate === date && booking.status === "confirmed"
-    );
+    // Get all confirmed bookings for the given date that might have time conflicts
+    const bookingsOnDate = await db.select()
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.meetingDate, date),
+          eq(bookings.status, "confirmed"),
+          not(eq(bookings.status, "cancelled"))
+        )
+      );
     
-    // Find accounts that don't have bookings in the requested time slot
+    // Find the first account that doesn't have time conflicts
     for (const account of activeAccounts) {
       const accountIsBooked = bookingsOnDate.some((booking) => {
+        // Skip if the booking is not for this account
         if (booking.zoomAccountId !== account.id) return false;
         
-        // Check if there's a time conflict
+        // Check for time overlap
         const bookingStart = booking.startTime;
         const bookingEnd = booking.endTime;
         
-        // Check for time overlap
         const hasOverlap = 
           (startTime >= bookingStart && startTime < bookingEnd) || 
           (endTime > bookingStart && endTime <= bookingEnd) ||
@@ -214,4 +218,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

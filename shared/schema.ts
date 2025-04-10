@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User schema
 export const users = pgTable("users", {
@@ -39,8 +40,8 @@ export const insertZoomAccountSchema = createInsertSchema(zoomAccounts).pick({
 // Bookings schema
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  zoomAccountId: integer("zoom_account_id"),
+  userId: integer("user_id").notNull().references(() => users.id),
+  zoomAccountId: integer("zoom_account_id").references(() => zoomAccounts.id),
   meetingTitle: text("meeting_title").notNull(),
   meetingDate: text("meeting_date").notNull(),
   startTime: text("start_time").notNull(),
@@ -61,6 +62,26 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   status: true,
   createdAt: true,
 });
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  bookings: many(bookings),
+}));
+
+export const zoomAccountsRelations = relations(zoomAccounts, ({ many }) => ({
+  bookings: many(bookings),
+}));
+
+export const bookingsRelations = relations(bookings, ({ one }) => ({
+  user: one(users, {
+    fields: [bookings.userId],
+    references: [users.id],
+  }),
+  zoomAccount: one(zoomAccounts, {
+    fields: [bookings.zoomAccountId],
+    references: [zoomAccounts.id],
+  }),
+}));
 
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
