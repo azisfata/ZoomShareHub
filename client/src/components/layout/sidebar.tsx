@@ -40,7 +40,7 @@ export function Sidebar() {
                     <rect x="14" y="14" width="7" height="7"></rect>
                     <rect x="3" y="14" width="7" height="7"></rect>
                   </svg>
-                  Dashboard
+                  Dasbor
                 </a>
               </Link>
             </li>
@@ -55,7 +55,7 @@ export function Sidebar() {
                     <line x1="12" y1="8" x2="12" y2="16"></line>
                     <line x1="8" y1="12" x2="16" y2="12"></line>
                   </svg>
-                  Request Zoom Account
+                  Minta Akun Zoom
                 </a>
               </Link>
             </li>
@@ -71,7 +71,7 @@ export function Sidebar() {
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                   </svg>
-                  My Bookings
+                  Pemesanan Saya
                 </a>
               </Link>
             </li>
@@ -89,7 +89,7 @@ export function Sidebar() {
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
-          Logout
+          Keluar
         </button>
       </div>
     </aside>

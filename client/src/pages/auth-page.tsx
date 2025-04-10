@@ -64,22 +64,22 @@ export default function AuthPage() {
       <div className="container mx-auto grid md:grid-cols-2 gap-6 px-4">
         <div className="flex flex-col justify-center">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">Zoom Account Management</h1>
-            <p className="text-gray-600">Sign in to request and manage Zoom accounts for your meetings</p>
+            <h1 className="text-3xl font-bold text-primary mb-2">Manajemen Akun Zoom</h1>
+            <p className="text-gray-600">Masuk untuk meminta dan mengelola akun Zoom untuk rapat Anda</p>
           </div>
           
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">Masuk</TabsTrigger>
+              <TabsTrigger value="register">Daftar</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
               <Card>
                 <CardHeader>
-                  <CardTitle>Login</CardTitle>
+                  <CardTitle>Masuk</CardTitle>
                   <CardDescription>
-                    Enter your credentials to access your account
+                    Masukkan kredensial Anda untuk mengakses akun Anda
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -90,9 +90,9 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Nama Pengguna</FormLabel>
                             <FormControl>
-                              <Input placeholder="username" {...field} />
+                              <Input placeholder="nama pengguna" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -104,7 +104,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Kata Sandi</FormLabel>
                             <FormControl>
                               <Input type="password" placeholder="********" {...field} />
                             </FormControl>
@@ -118,7 +118,7 @@ export default function AuthPage() {
                         className="w-full" 
                         disabled={loginMutation.isPending}
                       >
-                        {loginMutation.isPending ? "Logging in..." : "Sign In"}
+                        {loginMutation.isPending ? "Sedang Masuk..." : "Masuk"}
                       </Button>
                     </form>
                   </Form>
@@ -129,9 +129,9 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle>Register</CardTitle>
+                  <CardTitle>Daftar</CardTitle>
                   <CardDescription>
-                    Create a new account to access Zoom account management
+                    Buat akun baru untuk mengakses manajemen akun Zoom
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -142,9 +142,9 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Nama Pengguna</FormLabel>
                             <FormControl>
-                              <Input placeholder="username" {...field} />
+                              <Input placeholder="nama pengguna" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -156,9 +156,9 @@ export default function AuthPage() {
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Full Name</FormLabel>
+                            <FormLabel>Nama Lengkap</FormLabel>
                             <FormControl>
-                              <Input placeholder="John Doe" {...field} />
+                              <Input placeholder="Bambang Santoso" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -172,7 +172,7 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="email@company.com" {...field} />
+                              <Input placeholder="email@perusahaan.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -184,20 +184,20 @@ export default function AuthPage() {
                         name="department"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Department</FormLabel>
+                            <FormLabel>Departemen</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select department" />
+                                  <SelectValue placeholder="Pilih departemen" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="IT">IT</SelectItem>
                                 <SelectItem value="Marketing">Marketing</SelectItem>
-                                <SelectItem value="Sales">Sales</SelectItem>
-                                <SelectItem value="Finance">Finance</SelectItem>
-                                <SelectItem value="HR">Human Resources</SelectItem>
-                                <SelectItem value="Operations">Operations</SelectItem>
+                                <SelectItem value="Sales">Penjualan</SelectItem>
+                                <SelectItem value="Finance">Keuangan</SelectItem>
+                                <SelectItem value="HR">Sumber Daya Manusia</SelectItem>
+                                <SelectItem value="Operations">Operasional</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -210,7 +210,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Kata Sandi</FormLabel>
                             <FormControl>
                               <Input type="password" placeholder="********" {...field} />
                             </FormControl>
@@ -224,7 +224,7 @@ export default function AuthPage() {
                         className="w-full" 
                         disabled={registerMutation.isPending}
                       >
-                        {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                        {registerMutation.isPending ? "Membuat akun..." : "Buat Akun"}
                       </Button>
                     </form>
                   </Form>
@@ -236,8 +236,8 @@ export default function AuthPage() {
         
         <div className="hidden md:flex flex-col justify-center">
           <div className="bg-primary text-white rounded-lg p-8 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Zoom Account Lending System</h2>
-            <p className="mb-6">Access company Zoom accounts for your meetings without the hassle of account sharing or credential management.</p>
+            <h2 className="text-2xl font-bold mb-4">Sistem Peminjaman Akun Zoom</h2>
+            <p className="mb-6">Akses akun Zoom perusahaan untuk rapat Anda tanpa repot berbagi akun atau mengelola kredensial.</p>
             
             <div className="space-y-4">
               <div className="flex items-start">
@@ -248,8 +248,8 @@ export default function AuthPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold">Easy Booking</h3>
-                  <p className="text-sm opacity-90">Request access to Zoom accounts with just a few clicks</p>
+                  <h3 className="font-semibold">Pemesanan Mudah</h3>
+                  <p className="text-sm opacity-90">Minta akses ke akun Zoom hanya dengan beberapa klik</p>
                 </div>
               </div>
               
@@ -263,8 +263,8 @@ export default function AuthPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold">Schedule Management</h3>
-                  <p className="text-sm opacity-90">View and manage your Zoom account bookings</p>
+                  <h3 className="font-semibold">Manajemen Jadwal</h3>
+                  <p className="text-sm opacity-90">Lihat dan kelola pemesanan akun Zoom Anda</p>
                 </div>
               </div>
               
@@ -276,8 +276,8 @@ export default function AuthPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold">Instant Access</h3>
-                  <p className="text-sm opacity-90">Get immediate access to meeting credentials</p>
+                  <h3 className="font-semibold">Akses Instan</h3>
+                  <p className="text-sm opacity-90">Dapatkan akses langsung ke kredensial rapat</p>
                 </div>
               </div>
             </div>
