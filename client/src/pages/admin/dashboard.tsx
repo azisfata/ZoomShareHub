@@ -15,12 +15,36 @@ type AdminStats = {
   inactiveZoomAccounts: number;
   pendingBookings: number;
   completedBookings: number;
+  accountsWithStatus: Array<{
+    id: number;
+    name: string;
+    username: string;
+    isActive: boolean;
+  }>;
+  latestBookings: Array<{
+    id: number;
+    meetingTitle: string;
+    meetingDate: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    zoomAccount?: {
+      name: string;
+    };
+  }>;
+  users: Array<{
+    id: number;
+    name: string;
+    username: string;
+  }>;
 };
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
   });
+
+  const queryClient = useQueryClient();
 
   return (
     <>

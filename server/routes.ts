@@ -188,13 +188,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pendingBookings = allBookings.filter(booking => booking.status === "pending");
       const completedBookings = allBookings.filter(booking => booking.status === "completed");
       
+      // Get accounts with their status
+      const accountsWithStatus = allZoomAccounts.map(account => ({
+        id: account.id,
+        name: account.name,
+        username: account.username,
+        isActive: account.isActive
+      }));
+
+      // Get latest bookings with zoom account info
+      const latestBookings = await Promise.all(
+        allBookings.map(async booking => {
+          const zoomAccount = booking.zoomAccountId ? 
+            await storage.getZoomAccount(booking.zoomAccountId) : null;
+          
+          return {
+            id: booking.id,
+            meetingTitle: booking.meetingTitle,
+            meetingDate: booking.meetingDate,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            status: booking.status,
+            zoomAccount: zoomAccount ? {
+              name: zoomAccount.name
+            } : undefined
+          };
+        })
+      );
+
+      // Get user list
+      const usersList = allUsers.map(user => ({
+        id: user.id,
+        name: user.name,
+        username: user.username
+      }));
+
       res.json({
         totalBookings: allBookings.length,
         totalUsers: allUsers.length,
         activeZoomAccounts: activeZoomAccounts.length,
         inactiveZoomAccounts: inactiveZoomAccounts.length,
         pendingBookings: pendingBookings.length,
-        completedBookings: completedBookings.length
+        completedBookings: completedBookings.length,
+        accountsWithStatus,
+        latestBookings,
+        users: usersList
       });
     } catch (error) {
       next(error);
