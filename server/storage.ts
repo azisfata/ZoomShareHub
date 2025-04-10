@@ -10,6 +10,7 @@ import {
   type InsertBooking
 } from "@shared/schema";
 import session from "express-session";
+import { Store } from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { pool } from "./db";
@@ -22,6 +23,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   
   // Zoom account operations
   getZoomAccount(id: number): Promise<ZoomAccount | undefined>;
@@ -87,6 +89,10 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
   
   // Zoom account operations
