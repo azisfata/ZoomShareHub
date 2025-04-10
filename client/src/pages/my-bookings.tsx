@@ -50,18 +50,18 @@ export default function MyBookings() {
   const [bookingToCancel, setBookingToCancel] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const { data: bookings, isLoading, refetch } = useQuery<BookingWithZoomAccount[]>({
     queryKey: ["/api/bookings"],
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
-  
+
   // Ensure data is updated when the component mounts or when redirected here
   useEffect(() => {
     refetch();
   }, [refetch]);
-  
+
   const cancelMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/bookings/${id}`);
@@ -83,7 +83,7 @@ export default function MyBookings() {
       });
     },
   });
-  
+
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { 
       weekday: 'long', 
@@ -93,7 +93,7 @@ export default function MyBookings() {
     };
     return new Date(dateString).toLocaleDateString('id-ID', options);
   };
-  
+
   const formatTime = (timeString: string) => {
     // Convert 24-hour format to 12-hour with AM/PM
     const [hours, minutes] = timeString.split(':');
@@ -102,7 +102,7 @@ export default function MyBookings() {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
   };
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -117,19 +117,19 @@ export default function MyBookings() {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
+
   // Sort bookings by date and time (newest first)
   const sortedBookings = bookings?.slice().sort((a, b) => {
     const dateA = new Date(`${a.meetingDate}T${a.startTime}`).getTime();
     const dateB = new Date(`${b.meetingDate}T${b.startTime}`).getTime();
     return dateB - dateA;
   });
-  
+
   return (
     <>
       <MobileHeader />
       <Sidebar />
-      
+
       <main className="md:pl-64 pt-16 md:pt-0">
         <div className="p-6">
           <div className="mb-6">
@@ -153,7 +153,7 @@ export default function MyBookings() {
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-medium">Pemesanan Anda</h2>
             </div>
-            
+
             <div className="overflow-x-auto">
               {isLoading ? (
                 <div className="p-8 flex justify-center">
@@ -174,6 +174,7 @@ export default function MyBookings() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akun</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
                     </tr>
                   </thead>
@@ -193,6 +194,9 @@ export default function MyBookings() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {booking.zoomAccount ? booking.zoomAccount.name : 'Menunggu Penugasan'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {booking.zoomAccount ? booking.zoomAccount.password : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           {booking.status === 'confirmed' && (
