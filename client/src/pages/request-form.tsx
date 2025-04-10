@@ -18,13 +18,13 @@ import { CredentialsModal } from "@/components/modals/credentials-modal";
 import { Booking, InsertBooking, ZoomAccount } from "@shared/schema";
 
 const bookingFormSchema = z.object({
-  meetingTitle: z.string().min(3, "Title must be at least 3 characters"),
-  meetingDate: z.string().min(1, "Date is required"),
-  department: z.string().min(1, "Department is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  participants: z.coerce.number().min(1, "At least 1 participant is required"),
-  purpose: z.string().min(5, "Purpose must be at least 5 characters"),
+  meetingTitle: z.string().min(3, "Judul harus minimal 3 karakter"),
+  meetingDate: z.string().min(1, "Tanggal wajib diisi"),
+  department: z.string().min(1, "Departemen wajib diisi"),
+  startTime: z.string().min(1, "Waktu mulai wajib diisi"),
+  endTime: z.string().min(1, "Waktu selesai wajib diisi"),
+  participants: z.coerce.number().min(1, "Minimal 1 peserta diperlukan"),
+  purpose: z.string().min(5, "Tujuan harus minimal 5 karakter"),
   needsRecording: z.boolean().default(false),
   needsBreakoutRooms: z.boolean().default(false),
   needsPolls: z.boolean().default(false),
@@ -34,7 +34,7 @@ const bookingFormSchema = z.object({
   }
   return true;
 }, {
-  message: "End time must be after start time",
+  message: "Waktu selesai harus setelah waktu mulai",
   path: ["endTime"],
 });
 
@@ -95,8 +95,8 @@ export default function RequestForm() {
       <main className="md:pl-64 pt-16 md:pt-0">
         <div className="p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold">Request Zoom Account</h1>
-            <p className="text-gray-600">Fill out the form to request a Zoom account for your meeting</p>
+            <h1 className="text-2xl font-bold">Permintaan Akun Zoom</h1>
+            <p className="text-gray-600">Isi formulir untuk meminta akun Zoom untuk rapat Anda</p>
           </div>
 
           <Card>
@@ -108,9 +108,9 @@ export default function RequestForm() {
                     name="meetingTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Meeting Title</FormLabel>
+                        <FormLabel>Judul Rapat</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Marketing Team Meeting" {...field} />
+                          <Input placeholder="contoh: Rapat Tim Marketing" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -123,7 +123,7 @@ export default function RequestForm() {
                       name="meetingDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Date</FormLabel>
+                          <FormLabel>Tanggal</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
@@ -137,20 +137,20 @@ export default function RequestForm() {
                       name="department"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Department</FormLabel>
+                          <FormLabel>Departemen</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select department" />
+                                <SelectValue placeholder="Pilih departemen" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="IT">IT</SelectItem>
                               <SelectItem value="Marketing">Marketing</SelectItem>
-                              <SelectItem value="Sales">Sales</SelectItem>
-                              <SelectItem value="Finance">Finance</SelectItem>
-                              <SelectItem value="HR">Human Resources</SelectItem>
-                              <SelectItem value="Operations">Operations</SelectItem>
+                              <SelectItem value="Sales">Penjualan</SelectItem>
+                              <SelectItem value="Finance">Keuangan</SelectItem>
+                              <SelectItem value="HR">Sumber Daya Manusia</SelectItem>
+                              <SelectItem value="Operations">Operasional</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -165,7 +165,7 @@ export default function RequestForm() {
                       name="startTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Start Time</FormLabel>
+                          <FormLabel>Waktu Mulai</FormLabel>
                           <FormControl>
                             <Input type="time" {...field} />
                           </FormControl>
@@ -179,7 +179,7 @@ export default function RequestForm() {
                       name="endTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>End Time</FormLabel>
+                          <FormLabel>Waktu Selesai</FormLabel>
                           <FormControl>
                             <Input type="time" {...field} />
                           </FormControl>
@@ -194,7 +194,7 @@ export default function RequestForm() {
                     name="participants"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Expected Number of Participants</FormLabel>
+                        <FormLabel>Perkiraan Jumlah Peserta</FormLabel>
                         <FormControl>
                           <Input type="number" min="1" {...field} />
                         </FormControl>
@@ -208,10 +208,10 @@ export default function RequestForm() {
                     name="purpose"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Meeting Purpose</FormLabel>
+                        <FormLabel>Tujuan Rapat</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Briefly describe the purpose of this meeting" 
+                            placeholder="Jelaskan secara singkat tujuan rapat ini" 
                             rows={3} 
                             {...field} 
                           />
@@ -222,7 +222,7 @@ export default function RequestForm() {
                   />
                   
                   <div>
-                    <FormLabel>Required Features</FormLabel>
+                    <FormLabel>Fitur yang Dibutuhkan</FormLabel>
                     <div className="mt-2 space-y-2">
                       <FormField
                         control={form.control}
@@ -236,7 +236,7 @@ export default function RequestForm() {
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
-                              <FormLabel>Recording</FormLabel>
+                              <FormLabel>Perekaman</FormLabel>
                             </div>
                           </FormItem>
                         )}
@@ -254,7 +254,7 @@ export default function RequestForm() {
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
-                              <FormLabel>Breakout Rooms</FormLabel>
+                              <FormLabel>Ruang Diskusi</FormLabel>
                             </div>
                           </FormItem>
                         )}
@@ -272,7 +272,7 @@ export default function RequestForm() {
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
-                              <FormLabel>Polls</FormLabel>
+                              <FormLabel>Polling</FormLabel>
                             </div>
                           </FormItem>
                         )}
@@ -282,13 +282,13 @@ export default function RequestForm() {
                   
                   <div className="pt-4 flex justify-end space-x-3">
                     <Button type="button" variant="outline" asChild>
-                      <Link href="/">Cancel</Link>
+                      <Link href="/">Batal</Link>
                     </Button>
                     <Button 
                       type="submit" 
                       disabled={bookingMutation.isPending}
                     >
-                      {bookingMutation.isPending ? "Submitting..." : "Submit Request"}
+                      {bookingMutation.isPending ? "Mengirim..." : "Kirim Permintaan"}
                     </Button>
                   </div>
                 </form>

@@ -38,36 +38,37 @@ export function CredentialsModal({
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { 
       weekday: 'long', 
-      month: 'long', 
+      month: 'long',
+
       day: 'numeric', 
       year: 'numeric' 
     };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    return new Date(dateString).toLocaleDateString('id-ID', options);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-primary">Zoom Account Assigned</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-primary">Akun Zoom Ditetapkan</DialogTitle>
         </DialogHeader>
         
         <div className="mb-6">
           <p className="text-gray-600 mb-4">
-            Your meeting has been successfully scheduled. Here are your Zoom account credentials:
+            Rapat Anda telah berhasil dijadwalkan. Berikut adalah kredensial akun Zoom Anda:
           </p>
           
           <div className="bg-neutral-100 p-4 rounded-lg font-mono">
             <div className="mb-3">
-              <p className="text-sm text-gray-500 mb-1">Account Name:</p>
+              <p className="text-sm text-gray-500 mb-1">Nama Akun:</p>
               <p className="font-medium">{zoomAccount.name}</p>
             </div>
             <div className="mb-3">
-              <p className="text-sm text-gray-500 mb-1">Username:</p>
+              <p className="text-sm text-gray-500 mb-1">Nama Pengguna:</p>
               <p className="font-medium">{zoomAccount.username}</p>
             </div>
             <div className="mb-3">
-              <p className="text-sm text-gray-500 mb-1">Password:</p>
+              <p className="text-sm text-gray-500 mb-1">Kata Sandi:</p>
               <p className="font-medium">{zoomAccount.password}</p>
             </div>
           </div>
@@ -80,7 +81,7 @@ export function CredentialsModal({
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
               <span>
-                These credentials are valid from {formatTime(meetingDetails.startTime)} to {formatTime(meetingDetails.endTime)} on {formatDate(meetingDetails.date)}. Please log out from the Zoom account once your meeting is complete.
+                Kredensial ini berlaku dari {formatTime(meetingDetails.startTime)} hingga {formatTime(meetingDetails.endTime)} pada {formatDate(meetingDetails.date)}. Mohon keluar dari akun Zoom setelah rapat Anda selesai.
               </span>
             </p>
           </div>
@@ -93,7 +94,7 @@ export function CredentialsModal({
               setLocation("/bookings");
             }}
           >
-            Go to My Bookings
+            Lihat Pemesanan Saya
           </Button>
         </DialogFooter>
       </DialogContent>

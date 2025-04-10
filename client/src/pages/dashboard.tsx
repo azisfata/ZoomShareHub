@@ -34,8 +34,8 @@ export default function Dashboard() {
       <main className="md:pl-64 pt-16 md:pt-0">
         <div className="p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-gray-600">Check and manage Zoom account availability</p>
+            <h1 className="text-2xl font-bold">Dasbor</h1>
+            <p className="text-gray-600">Periksa dan kelola ketersediaan akun Zoom</p>
           </div>
 
           {/* Status Summary */}
@@ -67,7 +67,7 @@ export default function Dashboard() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Available Accounts</p>
+                        <p className="text-sm text-gray-600">Akun Tersedia</p>
                         <p className="text-2xl font-bold">{stats?.availableAccountsCount}</p>
                       </div>
                     </div>
@@ -83,7 +83,7 @@ export default function Dashboard() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Currently Booked</p>
+                        <p className="text-sm text-gray-600">Sedang Digunakan</p>
                         <p className="text-2xl font-bold">{stats?.bookedAccountsCount}</p>
                       </div>
                     </div>
@@ -99,7 +99,7 @@ export default function Dashboard() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Your Active Bookings</p>
+                        <p className="text-sm text-gray-600">Pemesanan Aktif Anda</p>
                         <p className="text-2xl font-bold">{stats?.userActiveBookingsCount}</p>
                       </div>
                     </div>
@@ -116,7 +116,7 @@ export default function Dashboard() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Request Account
+                Minta Akun
               </Link>
             </Button>
             <Button asChild variant="outline">
@@ -124,7 +124,7 @@ export default function Dashboard() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                View My Bookings
+                Lihat Pemesanan Saya
               </Link>
             </Button>
           </div>
@@ -132,7 +132,7 @@ export default function Dashboard() {
           {/* Account Status */}
           <Card>
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium">Current Zoom Account Status</h2>
+              <h2 className="text-lg font-medium">Status Akun Zoom Saat Ini</h2>
             </div>
             <div className="overflow-x-auto">
               {isLoading ? (
@@ -143,10 +143,10 @@ export default function Dashboard() {
                 <table className="w-full">
                   <thead className="bg-neutral-100">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akun</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Booking</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Available</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pemesanan Saat Ini</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tersedia Selanjutnya</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
@@ -157,16 +157,16 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {account.currentStatus === 'available' ? (
-                            <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Available</Badge>
+                            <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Tersedia</Badge>
                           ) : (
-                            <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">In Use</Badge>
+                            <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">Digunakan</Badge>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {account.currentStatus === 'available' ? '-' : 'Active Meeting'}
+                          {account.currentStatus === 'available' ? '-' : 'Rapat Aktif'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {account.currentStatus === 'available' ? 'Now' : 'Check back later'}
+                          {account.currentStatus === 'available' ? 'Sekarang' : 'Cek kembali nanti'}
                         </td>
                       </tr>
                     ))}
