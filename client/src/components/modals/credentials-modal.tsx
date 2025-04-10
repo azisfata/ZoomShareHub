@@ -96,7 +96,7 @@ export function CredentialsModal({
               queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
               queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
               onOpenChange(false);
-              setLocation("/bookings");
+              setLocation("/");
             }}
           >
             Lihat Pemesanan Saya
