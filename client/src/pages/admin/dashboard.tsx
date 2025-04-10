@@ -99,8 +99,41 @@ export default function AdminDashboard() {
                   
                   <Card>
                     <CardContent className="p-0">
-                      <div className="p-6">
-                        <p>Fitur mengelola akun Zoom akan segera tersedia.</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-neutral-100">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Akun</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200 bg-white">
+                            {stats?.accountsWithStatus?.map((account) => (
+                              <tr key={account.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium">{account.name}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm">{account.username}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Badge variant={account.isActive ? "outline" : "secondary"}>
+                                    {account.isActive ? "Aktif" : "Nonaktif"}
+                                  </Badge>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <Link href={`/admin/accounts/${account.id}/edit`}>
+                                      <Edit className="h-4 w-4" />
+                                    </Link>
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </CardContent>
                   </Card>
@@ -113,8 +146,41 @@ export default function AdminDashboard() {
                   
                   <Card>
                     <CardContent className="p-0">
-                      <div className="p-6">
-                        <p>Fitur mengelola semua pemesanan akan segera tersedia.</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-neutral-100">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Meeting</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akun Zoom</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200 bg-white">
+                            {stats?.latestBookings?.map((booking) => (
+                              <tr key={booking.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium">{booking.meetingTitle}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm">{booking.meetingDate}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm">{booking.startTime} - {booking.endTime}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Badge variant={booking.status === "confirmed" ? "outline" : "secondary"}>
+                                    {booking.status === "confirmed" ? "Terkonfirmasi" : "Pending"}
+                                  </Badge>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm">{booking.zoomAccount?.name || "-"}</div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </CardContent>
                   </Card>
@@ -127,8 +193,35 @@ export default function AdminDashboard() {
                   
                   <Card>
                     <CardContent className="p-0">
-                      <div className="p-6">
-                        <p>Fitur mengelola pengguna akan segera tersedia.</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-neutral-100">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200 bg-white">
+                            {stats?.users?.map((user) => (
+                              <tr key={user.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium">{user.name}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm">{user.username}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <Link href={`/admin/users/${user.id}/edit`}>
+                                      <Edit className="h-4 w-4" />
+                                    </Link>
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </CardContent>
                   </Card>
