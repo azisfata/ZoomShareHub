@@ -1,7 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Edit } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, User, Calendar, Monitor, Users } from "lucide-react";
 import { BadgePlus } from "lucide-react";
@@ -43,8 +45,6 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
   });
-
-  const queryClient = useQueryClient();
 
   return (
     <>
