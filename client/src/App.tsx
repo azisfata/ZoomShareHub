@@ -9,6 +9,8 @@ import Dashboard from "@/pages/dashboard";
 import RequestForm from "@/pages/request-form";
 import MyBookings from "@/pages/my-bookings";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { AdminProtectedRoute } from "@/lib/admin-protected-route";
+import AdminDashboard from "@/pages/admin/dashboard";
 
 function Router() {
   return (
@@ -16,6 +18,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/request" component={RequestForm} />
       <ProtectedRoute path="/bookings" component={MyBookings} />
+      <AdminProtectedRoute path="/admin" component={AdminDashboard} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

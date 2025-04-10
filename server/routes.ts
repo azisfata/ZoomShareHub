@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
@@ -8,14 +8,33 @@ import { insertBookingSchema } from "@shared/schema";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+  
+  // Authentication middleware
+  const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+  
+  // Admin middleware
+  const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ message: "Akses ditolak, hak akses admin diperlukan" });
+    }
+    
+    next();
+  };
 
   // API routes for Zoom account management
   
   // Get all Zoom accounts with their status
-  app.get("/api/zoom-accounts", async (req, res, next) => {
+  app.get("/api/zoom-accounts", authenticateUser, async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-      
       const accounts = await storage.getAllZoomAccounts();
       res.json(accounts);
     } catch (error) {
@@ -155,11 +174,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get dashboard stats
-  app.get("/api/dashboard", async (req, res, next) => {
+  // Admin routes
+  
+  // Get admin dashboard stats
+  app.get("/api/admin/stats", authenticateAdmin, async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      const allUsers = await storage.getAllUsers();
+      const allZoomAccounts = await storage.getAllZoomAccounts();
+      const allBookings = await storage.getAllBookings();
       
+      const activeZoomAccounts = allZoomAccounts.filter(acc => acc.isActive);
+      const inactiveZoomAccounts = allZoomAccounts.filter(acc => !acc.isActive);
+      const pendingBookings = allBookings.filter(booking => booking.status === "pending");
+      const completedBookings = allBookings.filter(booking => booking.status === "completed");
+      
+      res.json({
+        totalBookings: allBookings.length,
+        totalUsers: allUsers.length,
+        activeZoomAccounts: activeZoomAccounts.length,
+        inactiveZoomAccounts: inactiveZoomAccounts.length,
+        pendingBookings: pendingBookings.length,
+        completedBookings: completedBookings.length
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // User dashboard stats
+  app.get("/api/dashboard", authenticateUser, async (req, res, next) => {
+    try {
       const allAccounts = await storage.getAllZoomAccounts();
       const allBookings = await storage.getAllBookings();
       const userBookings = await storage.getBookingsByUserId(req.user.id);
