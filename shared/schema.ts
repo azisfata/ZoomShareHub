@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   department: text("department").notNull(),
   email: text("email").notNull(),
+  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -19,6 +20,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
   department: true,
   email: true,
+  role: true,
 });
 
 // Zoom accounts schema
