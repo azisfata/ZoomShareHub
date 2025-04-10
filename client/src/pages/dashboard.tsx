@@ -5,20 +5,11 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type DashboardStats = {
   availableAccountsCount: number;
   bookedAccountsCount: number;
   userActiveBookingsCount: number;
-  accountsWithStatus: Array<{
-    id: number;
-    name: string;
-    username: string;
-    isActive: boolean;
-    currentStatus: 'available' | 'in-use';
-  }>;
 };
 
 export default function Dashboard() {
@@ -30,7 +21,7 @@ export default function Dashboard() {
     <>
       <MobileHeader />
       <Sidebar />
-      
+
       <main className="md:pl-64 pt-16 md:pt-0">
         <div className="p-6">
           <div className="mb-6">
@@ -46,10 +37,10 @@ export default function Dashboard() {
                   <Card key={i}>
                     <CardContent className="p-6">
                       <div className="flex items-center">
-                        <Skeleton className="h-12 w-12 rounded-full mr-4" />
+                        <div className="h-12 w-12 rounded-full bg-neutral-100 animate-pulse mr-4" />
                         <div className="space-y-2">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-6 w-16" />
+                          <div className="h-4 w-32 bg-neutral-100 animate-pulse" />
+                          <div className="h-6 w-16 bg-neutral-100 animate-pulse" />
                         </div>
                       </div>
                     </CardContent>
@@ -73,7 +64,7 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardContent className="p-6">
                     <div className="flex items-center">
@@ -89,7 +80,7 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardContent className="p-6">
                     <div className="flex items-center">
@@ -110,7 +101,7 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex flex-wrap gap-4 mb-8">
+          <div className="flex flex-wrap gap-4">
             <Button asChild variant="default">
               <Link href="/request">
                 <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,53 +119,6 @@ export default function Dashboard() {
               </Link>
             </Button>
           </div>
-
-          {/* Account Status */}
-          <Card>
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium">Status Akun Zoom Saat Ini</h2>
-            </div>
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="p-8 flex justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <table className="w-full">
-                  <thead className="bg-neutral-100">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akun</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pemesanan Saat Ini</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tersedia Selanjutnya</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {stats?.accountsWithStatus.map((account) => (
-                      <tr key={account.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium">{account.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {account.currentStatus === 'available' ? (
-                            <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Tersedia</Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">Digunakan</Badge>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {account.currentStatus === 'available' ? '-' : 'Rapat Aktif'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {account.currentStatus === 'available' ? 'Sekarang' : 'Cek kembali nanti'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </Card>
         </div>
       </main>
     </>
