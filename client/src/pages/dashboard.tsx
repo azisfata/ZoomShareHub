@@ -51,6 +51,8 @@ type BookingWithZoomAccount = {
   } | null;
 };
 
+import React from 'react';
+
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();

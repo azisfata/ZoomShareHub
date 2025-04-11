@@ -1,12 +1,10 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
-import { Sidebar as UISidebar, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { LogOut, Home, CalendarDays, PlusCircle, Settings } from 'lucide-react';
+import { LogOut, Home, CalendarDays, PlusCircle, Settings, User } from 'lucide-react';
 
 interface SidebarProps {
   isCollapsed: boolean;
