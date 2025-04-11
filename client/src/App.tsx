@@ -16,7 +16,6 @@ function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
-      <ProtectedRoute path="/my-bookings" component={MyBookings} />
       <ProtectedRoute path="/request" component={RequestForm} />
       <AdminProtectedRoute path="/admin" component={AdminDashboard} />
       <Route path="/auth" component={AuthPage} />

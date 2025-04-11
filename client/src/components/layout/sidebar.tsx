@@ -1,18 +1,17 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { LogOut, Home, CalendarDays, PlusCircle, Settings } from 'lucide-react';
+import { LogOut, Home, CalendarDays, PlusCircle, Settings, User } from 'lucide-react';
 
 interface SidebarProps {
-  isCollapsed?: boolean;
-  setIsCollapsed?: (collapsed: boolean) => void;
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: SidebarProps) {
+export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
 
@@ -69,8 +68,8 @@ export function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: Side
         <nav>
           <ul className="space-y-2">
             <li>
-              <Link href="/">
-                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/') ? 'bg-neutral-100' : ''}`}>
+              <Link href="/dashboard">
+                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/dashboard') ? 'bg-neutral-100' : ''}`}>
                   <Home className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Dashboard</span>}
                 </a>
