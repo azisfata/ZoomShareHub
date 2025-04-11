@@ -8,10 +8,14 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { LogOut, Home, CalendarDays, PlusCircle, Settings } from 'lucide-react';
 
-export function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
+}
+
+export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   const isActive = (path: string) => {
     return location === path;
