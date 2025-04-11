@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Loader2, User, Calendar, Monitor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -55,6 +54,7 @@ type BookingWithZoomAccount = {
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isCollapsed, setIsCollapsed] = React.useState(false); // Added state for isCollapsed
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard"],
@@ -89,33 +89,49 @@ export default function Dashboard() {
   });
 
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     };
-    return new Date(dateString).toLocaleDateString('id-ID', options);
+    return new Date(dateString).toLocaleDateString("id-ID", options);
   };
 
   const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':');
+    const [hours, minutes] = timeString.split(":");
     const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Dikonfirmasi</Badge>;
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Menunggu</Badge>;
-      case 'cancelled':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Dibatalkan</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Selesai</Badge>;
+      case "confirmed":
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">
+            Dikonfirmasi
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+            Menunggu
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+            Dibatalkan
+          </Badge>
+        );
+      case "completed":
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+            Selesai
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -131,9 +147,9 @@ export default function Dashboard() {
   return (
     <>
       <MobileHeader />
-      <Sidebar />
+      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed}/> {/* Pass isCollapsed and setIsCollapsed to Sidebar */}
 
-      <main className={`transition-all duration-300 ${isCollapsed ? 'md:pl-16' : 'md:pl-64'} pt-16 md:pt-0`}>
+      <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Dasbor</h1>
@@ -262,13 +278,13 @@ export default function Dashboard() {
                             {getStatusBadge(booking.status)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {booking.zoomAccount ? booking.zoomAccount.name : 'Menunggu Penugasan'}
+                            {booking.zoomAccount ? booking.zoomAccount.name : "Menunggu Penugasan"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {booking.zoomAccount ? booking.zoomAccount.password : 'N/A'}
+                            {booking.zoomAccount ? booking.zoomAccount.password : "N/A"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {booking.status === 'confirmed' && (
+                            {booking.status === "confirmed" && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50">

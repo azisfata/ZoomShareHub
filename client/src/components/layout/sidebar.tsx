@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
+import { Sidebar as UISidebar, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
