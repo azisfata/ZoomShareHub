@@ -70,7 +70,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             <li>
               <Link href="/dashboard">
                 <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/dashboard') ? 'bg-neutral-100' : ''}`}>
-                  <Home className="h-5 w-5 text-gray-600" />
+                  <Home className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Dashboard</span>}
                 </a>
               </Link>
@@ -78,19 +78,29 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             <li>
               <Link href="/my-bookings">
                 <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/my-bookings') ? 'bg-neutral-100' : ''}`}>
-                  <CalendarDays className="h-5 w-5 text-gray-600" />
+                  <CalendarDays className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Pemesanan Saya</span>}
                 </a>
               </Link>
             </li>
             <li>
-              <Link href="/request-form">
-                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/request-form') ? 'bg-neutral-100' : ''}`}>
-                  <PlusCircle className="h-5 w-5 text-gray-600" />
+              <Link href="/request">
+                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/request') ? 'bg-neutral-100' : ''}`}>
+                  <PlusCircle className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Permintaan Akun</span>}
                 </a>
               </Link>
             </li>
+            {user?.role === 'admin' && (
+              <li>
+                <Link href="/admin">
+                  <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/admin') ? 'bg-neutral-100' : ''}`}>
+                    <Settings className="h-5 w-5 text-gray-500" />
+                    {!isCollapsed && <span className="ml-3">Admin</span>}
+                  </a>
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
 
