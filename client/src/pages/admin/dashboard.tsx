@@ -51,7 +51,7 @@ export default function AdminDashboard() {
       <MobileHeader />
       <Sidebar />
       
-      <main className="md:pl-64 pt-16 md:pt-0">
+      <main className="transition-all duration-300 md:pl-[var(--sidebar-width,16rem)] pt-16 md:pt-0">
         <div className="p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Portal Admin</h1>
