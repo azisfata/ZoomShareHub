@@ -21,7 +21,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className={`hidden md:block fixed h-full bg-white shadow-md transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden md:block fixed h-full bg-white shadow-md transition-all duration-300 z-10 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       <button 
         onClick={toggleSidebar}
         className="absolute -right-3 top-6 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
@@ -40,15 +40,24 @@ export function Sidebar() {
 
       <div className="p-6">
         <div className={`flex items-center mb-8 ${isCollapsed ? 'justify-center' : ''}`}>
-          <h1 className={`text-xl font-bold text-primary ${isCollapsed ? 'hidden' : ''}`}>ZoomManager</h1>
-          {isCollapsed && <Settings className="h-6 w-6" />}
+          {isCollapsed ? (
+            <Settings className="h-6 w-6" />
+          ) : (
+            <h1 className="text-xl font-bold text-primary">ZoomManager</h1>
+          )}
         </div>
 
         {user && (
           <div className="mb-8">
-            <div className={`py-3 px-4 bg-neutral-100 rounded-lg ${isCollapsed ? 'px-2' : ''}`}>
-              <p className={`text-sm font-medium truncate ${isCollapsed ? 'hidden' : ''}`}>{user.name}</p>
-              <p className={`text-xs text-gray-500 truncate ${isCollapsed ? 'hidden' : ''}`}>{user.department}</p>
+            <div className={`py-3 ${isCollapsed ? 'px-2' : 'px-4'} bg-neutral-100 rounded-lg flex items-center justify-center`}>
+              {isCollapsed ? (
+                <User className="h-5 w-5" />
+              ) : (
+                <div>
+                  <p className="text-sm font-medium truncate">{user.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user.department}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -57,39 +66,39 @@ export function Sidebar() {
           <ul className="space-y-2">
             <li>
               <Link href="/dashboard">
-                <a className={`flex items-center px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/dashboard') ? 'bg-neutral-100' : ''}`}>
+                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/dashboard') ? 'bg-neutral-100' : ''}`}>
                   <Home className="h-5 w-5" />
-                  <span className={`ml-3 ${isCollapsed ? 'hidden' : ''}`}>Dashboard</span>
+                  {!isCollapsed && <span className="ml-3">Dashboard</span>}
                 </a>
               </Link>
             </li>
             <li>
               <Link href="/my-bookings">
-                <a className={`flex items-center px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/my-bookings') ? 'bg-neutral-100' : ''}`}>
+                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/my-bookings') ? 'bg-neutral-100' : ''}`}>
                   <CalendarDays className="h-5 w-5" />
-                  <span className={`ml-3 ${isCollapsed ? 'hidden' : ''}`}>Pemesanan Saya</span>
+                  {!isCollapsed && <span className="ml-3">Pemesanan Saya</span>}
                 </a>
               </Link>
             </li>
             <li>
               <Link href="/request-form">
-                <a className={`flex items-center px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/request-form') ? 'bg-neutral-100' : ''}`}>
+                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/request-form') ? 'bg-neutral-100' : ''}`}>
                   <PlusCircle className="h-5 w-5" />
-                  <span className={`ml-3 ${isCollapsed ? 'hidden' : ''}`}>Permintaan Akun</span>
+                  {!isCollapsed && <span className="ml-3">Permintaan Akun</span>}
                 </a>
               </Link>
             </li>
           </ul>
         </nav>
 
-        <div className={`absolute bottom-6 ${isCollapsed ? 'w-16' : 'w-64'} px-6`}>
+        <div className={`absolute bottom-6 ${isCollapsed ? 'w-16' : 'w-64'} ${isCollapsed ? 'px-2' : 'px-6'}`}>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`w-full ${isCollapsed ? 'justify-center' : 'justify-start'}`}
             onClick={() => logoutMutation.mutate()}
           >
             <LogOut className="h-5 w-5" />
-            <span className={`ml-3 ${isCollapsed ? 'hidden' : ''}`}>Logout</span>
+            {!isCollapsed && <span className="ml-3">Logout</span>}
           </Button>
         </div>
       </div>

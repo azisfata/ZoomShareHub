@@ -133,7 +133,7 @@ export default function Dashboard() {
       <MobileHeader />
       <Sidebar />
 
-      <main className="md:pl-64 pt-16 md:pt-0">
+      <main className={`transition-all duration-300 ${isCollapsed ? 'md:pl-16' : 'md:pl-64'} pt-16 md:pt-0`}>
         <div className="p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Dasbor</h1>
