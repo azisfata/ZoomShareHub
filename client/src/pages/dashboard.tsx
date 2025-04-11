@@ -55,7 +55,6 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const [isCollapsed, setIsCollapsed] = React.useState(false); // Added state for isCollapsed
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard"],
