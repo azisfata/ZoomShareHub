@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { pool } from "./db";
 
 declare global {
   namespace Express {
@@ -28,6 +29,14 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Fungsi untuk hapus session lama user (fix: cek user di sess->'passport'->>'user')
+async function deleteSessionsForUser(userId: number) {
+  await pool.query(`
+    DELETE FROM "session"
+    WHERE (sess->'passport'->>'user')::int = $1
+  `, [userId]);
+}
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "zoom-account-manager-secret",
@@ -35,7 +44,7 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
     }
   };
 
@@ -93,10 +102,13 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", async (err, user, info) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
-      
+
+      // Hapus session lama user sebelum login baru
+      await deleteSessionsForUser(user.id);
+
       req.login(user, (err) => {
         if (err) return next(err);
         // Remove the password from the response
@@ -109,7 +121,10 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        res.sendStatus(200);
+      });
     });
   });
 

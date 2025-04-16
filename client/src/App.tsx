@@ -11,6 +11,7 @@ import MyBookings from "@/pages/my-bookings";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import AdminDashboard from "@/pages/admin/dashboard";
+import { SidebarCollapseProvider } from "@/contexts/SidebarCollapseContext";
 
 function Router() {
   return (
@@ -29,8 +30,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <SidebarCollapseProvider>
+          <Router />
+          <Toaster />
+        </SidebarCollapseProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

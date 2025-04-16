@@ -16,6 +16,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { CredentialsModal } from "@/components/modals/credentials-modal";
 import { Booking, InsertBooking, ZoomAccount } from "@shared/schema";
+import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
 
 const bookingFormSchema = z.object({
   meetingTitle: z.string().min(3, "Judul harus minimal 3 karakter"),
@@ -77,6 +78,8 @@ export default function RequestForm() {
     },
   });
   
+  const { isCollapsed } = useSidebarCollapse();
+  
   function onSubmit(data: BookingFormValues) {
     bookingMutation.mutate(data);
   }
@@ -86,7 +89,7 @@ export default function RequestForm() {
       <MobileHeader />
       <Sidebar />
       
-      <main className="md:pl-64 pt-16 md:pt-0">
+      <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Permintaan Akun Zoom</h1>

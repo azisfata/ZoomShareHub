@@ -9,6 +9,7 @@ import { Loader2, User, Calendar, Monitor, Users } from "lucide-react";
 import { BadgePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
 
 type AdminStats = {
   totalBookings: number;
@@ -46,12 +47,14 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/stats"],
   });
 
+  const { isCollapsed } = useSidebarCollapse();
+
   return (
     <>
       <MobileHeader />
       <Sidebar />
       
-      <main className="transition-all duration-300 md:pl-[var(--sidebar-width,16rem)] pt-16 md:pt-0">
+      <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Portal Admin</h1>

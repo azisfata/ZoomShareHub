@@ -1,20 +1,21 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { LogOut, Home, CalendarDays, PlusCircle, Settings } from 'lucide-react';
+import { LogOut, Home, CalendarDays, PlusCircle, Settings, User } from 'lucide-react';
+import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 
 interface SidebarProps {
   isCollapsed?: boolean;
   setIsCollapsed?: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: SidebarProps) {
+export function Sidebar({ isCollapsed: _isCollapsed, setIsCollapsed: _setIsCollapsed }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
+  const { isCollapsed, setIsCollapsed } = useSidebarCollapse();
 
   const isActive = (path: string) => {
     return location === path;
@@ -25,10 +26,10 @@ export function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: Side
   };
 
   return (
-    <aside className={`hidden md:block fixed h-full bg-white shadow-md transition-all duration-300 z-10 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden md:block fixed h-full bg-white shadow-md transition-all duration-300 z-10 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       <button 
         onClick={toggleSidebar}
-        className="absolute -right-3 top-6 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
+        className="absolute right-2 top-6 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
@@ -44,18 +45,16 @@ export function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: Side
 
       <div className="p-6">
         <div className={`flex items-center mb-8 ${isCollapsed ? 'justify-center' : ''}`}>
-          {isCollapsed ? (
-            <Settings className="h-6 w-6" />
-          ) : (
+          {!isCollapsed && (
             <h1 className="text-xl font-bold text-primary">ZoomManager</h1>
           )}
         </div>
 
         {user && (
           <div className="mb-8">
-            <div className={`py-3 ${isCollapsed ? 'px-2' : 'px-4'} bg-neutral-100 rounded-lg flex items-center justify-center`}>
+            <div className={`py-3 ${isCollapsed ? 'px-1' : 'px-4'} bg-neutral-100 rounded-lg flex items-center justify-center`}>
               {isCollapsed ? (
-                <User className="h-5 w-5" />
+                <User className="h-7 w-7" />
               ) : (
                 <div>
                   <p className="text-sm font-medium truncate">{user.name}</p>
@@ -70,42 +69,58 @@ export function Sidebar({ isCollapsed = false, setIsCollapsed = () => {} }: Side
           <ul className="space-y-2">
             <li>
               <Link href="/">
-                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/') ? 'bg-neutral-100' : ''}`}>
+                <span className={`flex items-center ${isCollapsed ? 'justify-center' : ''} ${isCollapsed ? 'px-0' : 'px-4'} py-2 rounded-lg hover:bg-neutral-100 ${isActive('/') ? 'bg-neutral-100' : ''}`}
+                  role="link"
+                  tabIndex={0}
+                  onClick={undefined}
+                >
                   <Home className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Dashboard</span>}
-                </a>
+                </span>
               </Link>
             </li>
             <li>
               <Link href="/my-bookings">
-                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/my-bookings') ? 'bg-neutral-100' : ''}`}>
+                <span className={`flex items-center ${isCollapsed ? 'justify-center' : ''} ${isCollapsed ? 'px-0' : 'px-4'} py-2 rounded-lg hover:bg-neutral-100 ${isActive('/my-bookings') ? 'bg-neutral-100' : ''}`}
+                  role="link"
+                  tabIndex={0}
+                  onClick={undefined}
+                >
                   <CalendarDays className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Pemesanan Saya</span>}
-                </a>
+                </span>
               </Link>
             </li>
             <li>
               <Link href="/request">
-                <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/request') ? 'bg-neutral-100' : ''}`}>
+                <span className={`flex items-center ${isCollapsed ? 'justify-center' : ''} ${isCollapsed ? 'px-0' : 'px-4'} py-2 rounded-lg hover:bg-neutral-100 ${isActive('/request') ? 'bg-neutral-100' : ''}`}
+                  role="link"
+                  tabIndex={0}
+                  onClick={undefined}
+                >
                   <PlusCircle className="h-5 w-5 text-gray-500" />
                   {!isCollapsed && <span className="ml-3">Permintaan Akun</span>}
-                </a>
+                </span>
               </Link>
             </li>
             {user?.role === 'admin' && (
               <li>
                 <Link href="/admin">
-                  <a className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-4 py-2 rounded-lg hover:bg-neutral-100 ${isActive('/admin') ? 'bg-neutral-100' : ''}`}>
+                  <span className={`flex items-center ${isCollapsed ? 'justify-center' : ''} ${isCollapsed ? 'px-0' : 'px-4'} py-2 rounded-lg hover:bg-neutral-100 ${isActive('/admin') ? 'bg-neutral-100' : ''}`}
+                    role="link"
+                    tabIndex={0}
+                    onClick={undefined}
+                  >
                     <Settings className="h-5 w-5 text-gray-500" />
                     {!isCollapsed && <span className="ml-3">Admin</span>}
-                  </a>
+                  </span>
                 </Link>
               </li>
             )}
           </ul>
         </nav>
 
-        <div className={`absolute bottom-6 ${isCollapsed ? 'w-16' : 'w-64'} ${isCollapsed ? 'px-2' : 'px-6'}`}>
+        <div className={`absolute bottom-6 ${isCollapsed ? 'w-20' : 'w-64'} ${isCollapsed ? 'px-1' : 'px-6'}`}>
           <Button
             variant="ghost"
             className={`w-full ${isCollapsed ? 'justify-center' : 'justify-start'}`}

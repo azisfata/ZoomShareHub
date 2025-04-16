@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useState, useEffect } from "react";
+import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
 
 type BookingWithZoomAccount = {
   id: number;
@@ -50,6 +51,7 @@ export default function MyBookings() {
   const [bookingToCancel, setBookingToCancel] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isCollapsed } = useSidebarCollapse();
 
   const { data: bookings, isLoading, refetch } = useQuery<BookingWithZoomAccount[]>({
     queryKey: ["/api/bookings"],
@@ -130,7 +132,7 @@ export default function MyBookings() {
       <MobileHeader />
       <Sidebar />
 
-      <main className="md:pl-64 pt-16 md:pt-0">
+      <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Pemesanan Saya</h1>

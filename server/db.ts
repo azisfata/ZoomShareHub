@@ -1,11 +1,15 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
+import * as dotenv from 'dotenv';
 
-neonConfig.webSocketConstructor = ws;
+// Pastikan .env dimuat
+dotenv.config();
 
 if (!process.env.DATABASE_URL) {
+  // Tampilkan nilai DATABASE_URL untuk debug
+  console.error('DATABASE_URL tidak ditemukan. Nilai env:', process.env);
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );

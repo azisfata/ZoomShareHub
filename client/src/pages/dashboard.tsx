@@ -52,11 +52,12 @@ type BookingWithZoomAccount = {
 };
 
 import React from 'react';
+import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
 
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const { isCollapsed } = useSidebarCollapse();
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard"],
@@ -149,7 +150,7 @@ export default function Dashboard() {
   return (
     <>
       <MobileHeader />
-      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed}/> {/* Pass isCollapsed and setIsCollapsed to Sidebar */}
+      <Sidebar />
 
       <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">

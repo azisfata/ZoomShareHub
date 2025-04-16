@@ -1,0 +1,3 @@
+id,username,password,name,department,email,role
+1,admin,$2b$10$mvZ9Fy1gFNGtZk6cEQg6Oe.PoocNQCODb/Vqgdy01D0c46sJ8j0fe,Administrator,IT,admin@company.com,admin
+2,user,$2b$10$1N/mVlhdyIbf2LUJ4kboGu7Jl7f977AfA4r0vPFxAthqEflT7.tg.,Sample User,Marketing,user@company.com,user
