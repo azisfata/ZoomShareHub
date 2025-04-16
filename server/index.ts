@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupAuth } from "./auth";
+import { Server as SocketIOServer } from 'socket.io';
+import http from 'http';
 
 const app = express();
 app.use(express.json());
@@ -37,8 +40,34 @@ app.use((req, res, next) => {
   next();
 });
 
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('New client connected');
+  
+  // Store user ID when authenticated
+  socket.on('authenticate', (userId) => {
+    console.log(`User ${userId} authenticated on socket ${socket.id}`);
+    socket.join(`user:${userId}`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
+
+// Make io available to other modules
+app.set('io', io);
+
 (async () => {
-  const server = await registerRoutes(app);
+  await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -57,11 +86,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen(port, "127.0.0.1", () => {
+  // Start server
+  const port = process.env.PORT || 5000;
+  server.listen(port, () => {
     log(`serving on port ${port}`);
   });
 })();

@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -30,7 +30,18 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Fungsi untuk hapus session lama user (fix: cek user di sess->'passport'->>'user')
-async function deleteSessionsForUser(userId: number) {
+async function deleteSessionsForUser(userId: number, req: Request) {
+  // Ambil io dari app
+  const io = req.app.get('io');
+  
+  // Kirim notifikasi ke semua perangkat user ini bahwa ada login baru
+  if (io) {
+    io.to(`user:${userId}`).emit('force_logout', {
+      message: 'Anda telah login di perangkat lain. Sesi ini akan berakhir.'
+    });
+  }
+  
+  // Hapus semua session lama
   await pool.query(`
     DELETE FROM "session"
     WHERE (sess->'passport'->>'user')::int = $1
@@ -102,12 +113,12 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", async (err, user, info) => {
+    passport.authenticate("local", async (err: any, user: Express.User | false, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
       // Hapus session lama user sebelum login baru
-      await deleteSessionsForUser(user.id);
+      await deleteSessionsForUser(user.id, req);
 
       req.login(user, (err) => {
         if (err) return next(err);

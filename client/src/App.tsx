@@ -12,6 +12,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import AdminDashboard from "@/pages/admin/dashboard";
 import { SidebarCollapseProvider } from "@/contexts/SidebarCollapseContext";
+import { SocketProvider } from "@/contexts/SocketContext";
 
 function Router() {
   return (
@@ -30,10 +31,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SidebarCollapseProvider>
-          <Router />
-          <Toaster />
-        </SidebarCollapseProvider>
+        <SocketProvider>
+          <SidebarCollapseProvider>
+            <Router />
+            <Toaster />
+          </SidebarCollapseProvider>
+        </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
