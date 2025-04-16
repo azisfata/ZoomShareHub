@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
+import { queryClient } from '@/lib/queryClient';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -14,9 +15,20 @@ export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const { user, logoutMutation } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Simpan sessionId di localStorage
+  useEffect(() => {
+    if (user && (user as any).sessionId) {
+      localStorage.setItem('sessionId', (user as any).sessionId);
+      // Join room sessionId di socket
+      if (socket && (user as any).sessionId) {
+        socket.emit('join_session', (user as any).sessionId);
+      }
+    }
+  }, [user, socket]);
 
   useEffect(() => {
     // Connect to socket server
@@ -38,17 +50,23 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Handle force logout event
     socket.on('force_logout', (data) => {
+      const mySessionId = localStorage.getItem('sessionId');
+      if (data.sessionId && data.sessionId === mySessionId) {
+        // Abaikan event jika sessionId sama
+        return;
+      }
+      
       toast({
         title: 'Sesi Berakhir',
         description: data.message,
         variant: 'destructive',
       });
       
-      // Wait 3 seconds to show the message before logout
-      setTimeout(() => {
-        logoutMutation.mutate();
-        setLocation('/auth');
-      }, 3000);
+      // Immediately clear user data and redirect
+      queryClient.setQueryData(["/api/user"], null);
+      
+      // Redirect to login page immediately
+      setLocation('/auth');
     });
 
     // Authenticate socket when user logs in
@@ -59,7 +77,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       socket.off('force_logout');
     };
-  }, [socket, user, logoutMutation, setLocation, toast]);
+  }, [socket, user, setLocation, toast]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

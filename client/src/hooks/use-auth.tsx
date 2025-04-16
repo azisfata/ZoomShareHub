@@ -7,6 +7,7 @@ import {
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSocket } from '@/contexts/SocketContext';
 import { z } from "zod";
 
 type AuthContextType = {
@@ -24,6 +25,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const { socket } = useSocket();
   const {
     data: user,
     error,
@@ -35,7 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
+      // Kirim socketId saat login
+      const res = await apiRequest("POST", "/api/login", {
+        ...credentials,
+        socketId: socket?.id,
+      });
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {

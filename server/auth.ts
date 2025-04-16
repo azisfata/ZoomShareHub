@@ -1,12 +1,13 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request } from "express";
+import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { pool } from "./db";
+import { Server as SocketIOServer } from 'socket.io';
 
 declare global {
   namespace Express {
@@ -29,19 +30,8 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-// Fungsi untuk hapus session lama user (fix: cek user di sess->'passport'->>'user')
-async function deleteSessionsForUser(userId: number, req: Request) {
-  // Ambil io dari app
-  const io = req.app.get('io');
-  
-  // Kirim notifikasi ke semua perangkat user ini bahwa ada login baru
-  if (io) {
-    io.to(`user:${userId}`).emit('force_logout', {
-      message: 'Anda telah login di perangkat lain. Sesi ini akan berakhir.'
-    });
-  }
-  
-  // Hapus semua session lama
+// Fungsi untuk hapus session lama user (tidak perlu kirim event di sini)
+async function deleteSessionsForUser(userId: number) {
   await pool.query(`
     DELETE FROM "session"
     WHERE (sess->'passport'->>'user')::int = $1
@@ -117,14 +107,40 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-      // Hapus session lama user sebelum login baru
-      await deleteSessionsForUser(user.id, req);
+      // Ambil io dari app
+      const io = req.app.get('io');
+      // Ambil semua session lama user
+      const { rows } = await pool.query(`
+        SELECT sid FROM "session"
+        WHERE (sess->'passport'->>'user')::int = $1
+      `, [user.id]);
+      const oldSessionIds = rows.map((row: any) => row.sid);
+
+      // Hapus semua session lama
+      await deleteSessionsForUser(user.id);
+
+      // Kirim force_logout ke semua session lama
+      if (io) {
+        // Broadcast ke semua socket dalam room user
+        io.to(`user:${user.id}`).emit('force_logout', {
+          message: 'Anda telah login di perangkat lain. Sesi ini akan berakhir.',
+          sessionId: null
+        });
+        
+        // Juga kirim ke semua session lama secara spesifik
+        for (const sid of oldSessionIds) {
+          io.to(`session:${sid}`).emit('force_logout', {
+            message: 'Anda telah login di perangkat lain. Sesi ini akan berakhir.',
+            sessionId: sid
+          });
+        }
+      }
 
       req.login(user, (err) => {
         if (err) return next(err);
-        // Remove the password from the response
         const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        // Kirim sessionId baru ke client
+        res.status(200).json({ ...userWithoutPassword, sessionId: req.sessionID });
       });
     })(req, res, next);
   });
@@ -147,3 +163,28 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 }
+
+// Socket.io: join room berdasarkan sessionId
+function setupSocketIo(io: SocketIOServer) {
+  io.on('connection', (socket) => {
+    console.log('Socket connected:', socket.id);
+    
+    // Client harus mengirim sessionId setelah login
+    socket.on('join_session', (sessionId) => {
+      if (sessionId) {
+        console.log(`Socket ${socket.id} joining session room: ${sessionId}`);
+        socket.join(`session:${sessionId}`);
+      }
+    });
+    
+    // Authenticate user
+    socket.on('authenticate', (userId) => {
+      if (userId) {
+        console.log(`Socket ${socket.id} authenticated for user: ${userId}`);
+        socket.join(`user:${userId}`);
+      }
+    });
+  });
+}
+
+export { setupSocketIo };

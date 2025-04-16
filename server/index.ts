@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { setupAuth } from "./auth";
+import { setupAuth, setupSocketIo } from "./auth";
 import { Server as SocketIOServer } from 'socket.io';
 import http from 'http';
 
@@ -47,6 +47,8 @@ const io = new SocketIOServer(server, {
     methods: ["GET", "POST"]
   }
 });
+
+setupSocketIo(io);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
