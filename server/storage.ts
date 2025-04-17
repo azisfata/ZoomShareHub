@@ -10,7 +10,7 @@ import {
   type InsertBooking
 } from "@shared/schema";
 import session from "express-session";
-import { Store } from "express-session";
+import type { Store } from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { pool } from "./db";
@@ -86,9 +86,12 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users)
+      .values(user)
+      .returning();
+    
+    return newUser;
   }
   
   async getAllUsers(): Promise<User[]> {

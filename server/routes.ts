@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
 import { insertBookingSchema } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -11,7 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Authentication middleware
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated()) {
+    if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
@@ -19,11 +20,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin middleware
   const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated()) {
+    if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    if (req.user?.role !== 'admin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ message: "Akses ditolak, hak akses admin diperlukan" });
     }
     
@@ -45,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get a specific Zoom account
   app.get("/api/zoom-accounts/:id", async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
       const id = parseInt(req.params.id);
       const account = await storage.getZoomAccount(id);
@@ -65,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new booking
   app.post("/api/bookings", async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
       // Validate request body
       const validatedData = insertBookingSchema.parse({
@@ -95,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all bookings for the current user
   app.get("/api/bookings", async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
       const userBookings = await storage.getBookingsByUserId(req.user.id);
       
@@ -122,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get a specific booking
   app.get("/api/bookings/:id", async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
       const id = parseInt(req.params.id);
       const booking = await storage.getBooking(id);
@@ -151,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cancel a booking
   app.delete("/api/bookings/:id", async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+      if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
       const id = parseInt(req.params.id);
       const booking = await storage.getBooking(id);
@@ -235,6 +236,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         users: usersList
       });
     } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Create new user (admin only)
+  app.post("/api/admin/users", authenticateAdmin, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertUserSchema.parse(req.body);
+      
+      // Create the user
+      const user = await storage.createUser({
+        ...validatedData,
+        role: 'user' // Default role
+      });
+      
+      res.status(201).json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid user data", 
+          errors: error.errors 
+        });
+      }
       next(error);
     }
   });

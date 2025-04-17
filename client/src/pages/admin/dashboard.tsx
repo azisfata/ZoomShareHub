@@ -10,6 +10,21 @@ import { BadgePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 type AdminStats = {
   totalBookings: number;
@@ -39,6 +54,8 @@ type AdminStats = {
     id: number;
     name: string;
     username: string;
+    department?: string;
+    role?: string;
   }>;
 };
 
@@ -48,6 +65,35 @@ export default function AdminDashboard() {
   });
 
   const { isCollapsed } = useSidebarCollapse();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [newUser, setNewUser] = useState({
+    name: '',
+    username: '',
+    password: ''
+  });
+
+  const addUserMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/admin/users', newUser);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({
+        title: "User berhasil ditambahkan",
+        description: `User ${newUser.username} telah ditambahkan`,
+      });
+      setNewUser({ name: '', username: '', password: '' });
+    },
+    onError: (error) => {
+      toast({
+        title: "Gagal menambahkan user",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   return (
     <>
@@ -56,9 +102,12 @@ export default function AdminDashboard() {
       
       <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold">Portal Admin</h1>
-            <p className="text-gray-600">Kelola akun Zoom dan lihat statistik penggunaan</p>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">Portal Admin</h1>
+              <p className="text-gray-600">Kelola akun Zoom dan lihat statistik penggunaan</p>
+            </div>
+            
           </div>
 
           {isLoading ? (
@@ -214,11 +263,72 @@ export default function AdminDashboard() {
                 </TabsContent>
                 
                 <TabsContent value="users" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold">Kelola Pengguna</h2>
-                  </div>
-                  
                   <Card>
+                    <CardHeader className="flex flex-row justify-between items-center">
+                      <CardTitle>Daftar Pengguna</CardTitle>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button>
+                            <Users className="mr-2 h-4 w-4" />
+                            Tambah User
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Tambah User Baru</DialogTitle>
+                            <DialogDescription>
+                              Isi form berikut untuk menambahkan user baru ke sistem
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="name" className="text-right">
+                                Nama
+                              </Label>
+                              <Input
+                                id="name"
+                                value={newUser.name}
+                                onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                                className="col-span-3"
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="username" className="text-right">
+                                Username
+                              </Label>
+                              <Input
+                                id="username"
+                                value={newUser.username}
+                                onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                                className="col-span-3"
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="password" className="text-right">
+                                Password
+                              </Label>
+                              <Input
+                                id="password"
+                                type="password"
+                                value={newUser.password}
+                                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                                className="col-span-3"
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button 
+                              type="submit"
+                              onClick={() => addUserMutation.mutate()}
+                              disabled={addUserMutation.isPending}
+                            >
+                              {addUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Simpan
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </CardHeader>
                     <CardContent className="p-0">
                       <div className="overflow-x-auto">
                         <table className="w-full">
@@ -226,6 +336,8 @@ export default function AdminDashboard() {
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
                             </tr>
                           </thead>
@@ -237,6 +349,12 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm">{user.username}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm">{user.department || "-"}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm capitalize">{user.role || "-"}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right">
                                   <Button variant="ghost" size="sm" asChild>
