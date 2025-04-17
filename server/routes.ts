@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { hashPassword } from "./auth";
 import { z } from "zod";
 import { insertBookingSchema } from "@shared/schema";
 import { insertUserSchema } from "@shared/schema";
@@ -199,29 +200,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get latest bookings with zoom account info
       const latestBookings = await Promise.all(
-        allBookings.map(async booking => {
-          const zoomAccount = booking.zoomAccountId ? 
-            await storage.getZoomAccount(booking.zoomAccountId) : null;
-          
-          return {
-            id: booking.id,
-            meetingTitle: booking.meetingTitle,
-            meetingDate: booking.meetingDate,
-            startTime: booking.startTime,
-            endTime: booking.endTime,
-            status: booking.status,
-            zoomAccount: zoomAccount ? {
-              name: zoomAccount.name
-            } : undefined
-          };
-        })
+        allBookings.slice(0, 5).map(async (booking) => ({
+          id: booking.id,
+          meetingTitle: booking.meetingTitle,
+          meetingDate: booking.meetingDate,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          status: booking.status,
+          zoomAccount: booking.zoomAccountId 
+            ? await storage.getZoomAccount(booking.zoomAccountId)
+            : undefined
+        }))
       );
 
-      // Get user list
-      const usersList = allUsers.map(user => ({
+      // Get users with department and role
+      const users = allUsers.map(user => ({
         id: user.id,
         name: user.name,
-        username: user.username
+        username: user.username,
+        department: user.department,
+        role: user.role
       }));
 
       res.json({
@@ -233,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completedBookings: completedBookings.length,
         accountsWithStatus,
         latestBookings,
-        users: usersList
+        users
       });
     } catch (error) {
       next(error);
@@ -245,13 +243,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Validate request body
       const validatedData = insertUserSchema.parse(req.body);
-      
-      // Create the user
+      // Hash password sebelum simpan
+      const hashedPassword = await hashPassword(validatedData.password);
       const user = await storage.createUser({
         ...validatedData,
-        role: 'user' // Default role
+        password: hashedPassword,
       });
-      
       res.status(201).json(user);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -260,6 +257,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: error.errors 
         });
       }
+      next(error);
+    }
+  });
+  
+  // Hapus user (admin only)
+  app.delete("/api/admin/users/:id", authenticateAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID tidak valid" });
+      const user = await storage.getUser(id);
+      if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
+      await storage.deleteUser(id);
+      res.status(204).send();
+    } catch (error) {
       next(error);
     }
   });

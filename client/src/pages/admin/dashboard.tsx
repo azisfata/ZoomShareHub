@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Calendar, Monitor, Users } from "lucide-react";
+import { Loader2, User, Calendar, Monitor, Users, Trash2 } from "lucide-react";
 import { BadgePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -25,6 +25,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+
+const registerSchema = z.object({
+  username: z.string().min(3, "Username minimal 3 karakter"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+  email: z.string().email("Email tidak valid"),
+  department: z.string().min(1, "Pilih departemen"),
+  role: z.enum(["user", "admin"]).default("user"),
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 type AdminStats = {
   totalBookings: number;
@@ -67,24 +81,33 @@ export default function AdminDashboard() {
   const { isCollapsed } = useSidebarCollapse();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [newUser, setNewUser] = useState({
-    name: '',
-    username: '',
-    password: ''
+
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      username: '',
+      password: '',
+      department: '',
+      email: '',
+      role: 'user',
+    },
+    mode: 'onChange',
+    reValidateMode: 'onBlur',
   });
 
   const addUserMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/admin/users', newUser);
+    mutationFn: async (values: RegisterFormValues) => {
+      const res = await apiRequest('POST', '/api/admin/users', values);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       toast({
         title: "User berhasil ditambahkan",
-        description: `User ${newUser.username} telah ditambahkan`,
+        description: `User ${form.getValues("username") || "-"} telah ditambahkan`,
       });
-      setNewUser({ name: '', username: '', password: '' });
+      form.reset();
     },
     onError: (error) => {
       toast({
@@ -94,6 +117,31 @@ export default function AdminDashboard() {
       });
     }
   });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest('DELETE', `/api/admin/users/${userId}`);
+      if (!res.ok) throw new Error('Gagal menghapus user');
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({ title: 'User berhasil dihapus' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Gagal menghapus user', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const handleDeleteUser = (userId: number, username: string) => {
+    if (window.confirm(`Yakin ingin menghapus user "${username}"?`)) {
+      deleteUserMutation.mutate(userId);
+    }
+  };
+
+  const onSubmit = (values: RegisterFormValues) => {
+    addUserMutation.mutate(values);
+  };
 
   return (
     <>
@@ -280,52 +328,75 @@ export default function AdminDashboard() {
                               Isi form berikut untuk menambahkan user baru ke sistem
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="name" className="text-right">
-                                Nama
-                              </Label>
-                              <Input
-                                id="name"
-                                value={newUser.name}
-                                onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                                className="col-span-3"
-                              />
+                          <form onSubmit={form.handleSubmit(onSubmit)}>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">Nama</Label>
+                                <Input id="name" {...form.register("name")} className="col-span-3" />
+                                <div className="col-span-4">
+                                  {(form.formState.errors.name && (form.formState.touchedFields.name || form.watch('name') !== '')) && (
+                                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.name.message as string}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="username" className="text-right">Username</Label>
+                                <Input id="username" {...form.register("username")} className="col-span-3" />
+                                <div className="col-span-4">
+                                  {(form.formState.errors.username && (form.formState.touchedFields.username || form.watch('username') !== '')) && (
+                                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.username.message as string}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="password" className="text-right">Password</Label>
+                                <Input id="password" type="password" {...form.register("password")} className="col-span-3" />
+                                <div className="col-span-4">
+                                  {(form.formState.errors.password && (form.formState.touchedFields.password || form.watch('password') !== '')) && (
+                                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.password.message as string}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="email" className="text-right">Email</Label>
+                                <Input id="email" type="email" {...form.register("email")} className="col-span-3" />
+                                <div className="col-span-4">
+                                  {(form.formState.errors.email && (form.formState.touchedFields.email || form.watch('email') !== '')) && (
+                                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.email.message as string}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="department" className="text-right">Departemen</Label>
+                                <select id="department" {...form.register("department")} className="col-span-3 border rounded px-2 py-1 h-10">
+                                  <option value="">Pilih Departemen</option>
+                                  <option value="IT">IT</option>
+                                  <option value="HRD">HRD</option>
+                                  <option value="Keuangan">Keuangan</option>
+                                  <option value="Marketing">Marketing</option>
+                                  <option value="Operasional">Operasional</option>
+                                </select>
+                                <div className="col-span-4">
+                                  {(form.formState.errors.department && (form.formState.touchedFields.department || form.watch('department') !== '')) && (
+                                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.department.message as string}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="role" className="text-right">Role</Label>
+                                <select id="role" {...form.register("role")} className="col-span-3 border rounded px-2 py-1 h-10">
+                                  <option value="user">User</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                              </div>
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="username" className="text-right">
-                                Username
-                              </Label>
-                              <Input
-                                id="username"
-                                value={newUser.username}
-                                onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                                className="col-span-3"
-                              />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="password" className="text-right">
-                                Password
-                              </Label>
-                              <Input
-                                id="password"
-                                type="password"
-                                value={newUser.password}
-                                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                                className="col-span-3"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button 
-                              type="submit"
-                              onClick={() => addUserMutation.mutate()}
-                              disabled={addUserMutation.isPending}
-                            >
-                              {addUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              Simpan
-                            </Button>
-                          </DialogFooter>
+                            <DialogFooter>
+                              <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isValid}>
+                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Simpan
+                              </Button>
+                            </DialogFooter>
+                          </form>
                         </DialogContent>
                       </Dialog>
                     </CardHeader>
@@ -361,6 +432,15 @@ export default function AdminDashboard() {
                                     <Link href={`/admin/users/${user.id}/edit`}>
                                       <Edit className="h-4 w-4" />
                                     </Link>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteUser(user.id, user.username)}
+                                    disabled={deleteUserMutation.isPending}
+                                    aria-label={`Hapus user ${user.username}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
                                   </Button>
                                 </td>
                               </tr>
