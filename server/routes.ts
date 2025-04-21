@@ -97,6 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all bookings for the current user
   app.get("/api/bookings", async (req, res, next) => {
     try {
+      await markCompletedBookings();
       if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
       const userBookings = await storage.getBookingsByUserId(req.user.id);
@@ -181,6 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get admin dashboard stats
   app.get("/api/admin/stats", authenticateAdmin, async (req, res, next) => {
     try {
+      await markCompletedBookings();
       const allUsers = await storage.getAllUsers();
       const allZoomAccounts = await storage.getAllZoomAccounts();
       const allBookings = await storage.getAllBookings();
@@ -329,4 +331,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+async function markCompletedBookings() {
+  // Implementasi fungsi markCompletedBookings
+  // Contoh:
+  const allBookings = await storage.getAllBookings();
+  const today = new Date().toISOString().split('T')[0];
+  const completedBookings = allBookings.filter(booking => 
+    booking.status === "confirmed" && booking.meetingDate < today
+  );
+  await Promise.all(
+    completedBookings.map(async (booking) => {
+      await storage.updateBooking(booking.id, { status: "completed" });
+    })
+  );
 }

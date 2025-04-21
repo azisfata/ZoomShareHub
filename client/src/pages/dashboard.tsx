@@ -147,6 +147,15 @@ export default function Dashboard() {
     return dateB - dateA;
   });
 
+  // Filter hanya booking aktif: tidak cancelled dan belum lewat tanggal pelaksanaan
+  const today = new Date();
+  const activeBookings = sortedBookings?.filter((b) => {
+    if (b.status === 'cancelled') return false;
+    const bookingDate = new Date(`${b.meetingDate}T${b.endTime || '23:59'}`);
+    // bookingDate >= hari ini (masih aktif)
+    return bookingDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  });
+
   return (
     <>
       <MobileHeader />
@@ -155,7 +164,7 @@ export default function Dashboard() {
       <main className={`transition-all duration-300 ${isCollapsed ? "md:pl-16" : "md:pl-64"} pt-16 md:pt-0`}>
         <div className="p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold">Dasbor</h1>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-gray-600">Periksa dan kelola ketersediaan akun Zoom</p>
           </div>
 
@@ -239,7 +248,7 @@ export default function Dashboard() {
           {/* Bookings List */}
           <Card>
             <CardHeader>
-              <CardTitle>Pemesanan Saya</CardTitle>
+              <CardTitle>Pesanan Aktif</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -247,9 +256,9 @@ export default function Dashboard() {
                   <div className="p-8 flex justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : sortedBookings?.length === 0 ? (
+                ) : activeBookings?.length === 0 ? (
                   <div className="p-8 text-center">
-                    <p className="text-gray-500">Anda belum memiliki pemesanan</p>
+                    <p className="text-gray-500">Anda belum memiliki pemesanan yang aktif</p>
                     <Button asChild className="mt-4">
                       <Link href="/request">Minta Akun Zoom</Link>
                     </Button>
@@ -261,13 +270,14 @@ export default function Dashboard() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Rapat</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status (API)</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akun</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
-                      {sortedBookings?.map((booking) => (
+                      {activeBookings?.map((booking) => (
                         <tr key={booking.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium">{booking.meetingTitle}</div>
@@ -279,6 +289,9 @@ export default function Dashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(booking.status)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {booking.status}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {booking.zoomAccount ? booking.zoomAccount.name : "Menunggu Penugasan"}

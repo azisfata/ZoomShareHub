@@ -294,9 +294,20 @@ export default function AdminDashboard() {
                                   <div className="text-sm">{booking.startTime} - {booking.endTime}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <Badge variant={booking.status === "confirmed" ? "outline" : "secondary"}>
-                                    {booking.status === "confirmed" ? "Terkonfirmasi" : "Pending"}
-                                  </Badge>
+                                  {(() => {
+                                    switch (booking.status) {
+                                      case "confirmed":
+                                        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Terkonfirmasi</Badge>;
+                                      case "pending":
+                                        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Menunggu</Badge>;
+                                      case "cancelled":
+                                        return <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Dibatalkan</Badge>;
+                                      case "completed":
+                                        return <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Selesai</Badge>;
+                                      default:
+                                        return <Badge variant="outline">{booking.status}</Badge>;
+                                    }
+                                  })()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm">{booking.zoomAccount?.name || "-"}</div>

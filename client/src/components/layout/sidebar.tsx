@@ -87,7 +87,7 @@ export function Sidebar({ isCollapsed: _isCollapsed, setIsCollapsed: _setIsColla
                   onClick={undefined}
                 >
                   <CalendarDays className="h-5 w-5 text-gray-500" />
-                  {!isCollapsed && <span className="ml-3">Pemesanan Saya</span>}
+                  {!isCollapsed && <span className="ml-3">Riwayat Pemesanan</span>}
                 </span>
               </Link>
             </li>

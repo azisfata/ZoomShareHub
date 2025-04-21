@@ -233,4 +233,26 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+export async function markCompletedBookings() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  // Ambil semua booking yang statusnya 'confirmed' dan meetingDate < hari ini
+  const bookingsToComplete = await db.select().from(bookings)
+    .where(
+      and(
+        eq(bookings.status, "confirmed"),
+        lte(bookings.meetingDate, today.toISOString().split("T")[0])
+      )
+    );
+  for (const booking of bookingsToComplete) {
+    // Hanya tandai completed jika endTime sudah lewat hari ini atau tanggal sudah lewat
+    const endDateTime = new Date(`${booking.meetingDate}T${booking.endTime || '23:59'}`);
+    if (endDateTime < new Date()) {
+      await db.update(bookings)
+        .set({ status: "completed" })
+        .where(eq(bookings.id, booking.id));
+    }
+  }
+}
+
 export const storage = new DatabaseStorage();

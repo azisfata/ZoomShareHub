@@ -90,7 +90,8 @@ app.set('io', io);
 
   // Start server
   const port = process.env.PORT || 5000;
-  server.listen(port, () => {
-    log(`serving on port ${port}`);
+  const host = process.env.HOST || '0.0.0.0';
+  server.listen(Number(port), host, () => {
+    log(`serving on http://${host}:${port}`);
   });
 })();
