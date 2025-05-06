@@ -11,12 +11,13 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import type { Store } from "express-session";
-import connectPg from "connect-pg-simple";
+import MySQLStore from "express-mysql-session";
 import { db } from "./db";
 import { pool } from "./db";
-import { eq, and, or, not, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, or, not, gte, lte, desc, asc, sql } from "drizzle-orm";
+import { getInsertId, getRowsAffected } from "./mysql-helpers";
 
-const PostgresSessionStore = connectPg(session);
+const MySQLSessionStore = MySQLStore(session);
 
 export interface IStorage {
   // User operations
@@ -41,17 +42,30 @@ export interface IStorage {
   getAvailableZoomAccount(date: string, startTime: string, endTime: string): Promise<ZoomAccount | undefined>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: Store;
 }
 
 export class DatabaseStorage implements IStorage {
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: Store;
   
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool,
-      createTableIfMissing: true
+    this.sessionStore = new MySQLSessionStore({ 
+      // Konfigurasi MySQL session store
+      host: process.env.DB_HOST || '192.168.10.157',
+      port: 3306,
+      user: process.env.DB_USER || 'sipd',
+      password: process.env.DB_PASSWORD || 's1n3rgh1@',
+      database: process.env.DB_NAME || 'kemenkopmk_db_clone',
+      // Gunakan tabel zoom_sessions
+      schema: {
+        tableName: 'zoom_sessions',
+        columnNames: {
+          session_id: 'sid',
+          expires: 'expire',
+          data: 'sess'
+        }
+      }
     });
     
     // Ensure we have 20 Zoom accounts in the database
@@ -88,10 +102,10 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users)
-      .values(user)
-      .returning();
-    
+    // MySQL tidak mendukung returning(), jadi kita insert dulu lalu query
+    const result = await db.insert(users).values(user);
+    const insertId = getInsertId(result);
+    const [newUser] = await db.select().from(users).where(eq(users.id, insertId));
     return newUser;
   }
   
@@ -100,8 +114,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteUser(id: number): Promise<boolean> {
-    const result = await db.delete(users).where(eq(users.id, id)).returning();
-    return result.length > 0;
+    const result = await db.delete(users).where(eq(users.id, id));
+    return getRowsAffected(result) > 0;
   }
   
   // Zoom account operations
@@ -115,30 +129,29 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createZoomAccount(account: InsertZoomAccount): Promise<ZoomAccount> {
-    const [zoomAccount] = await db.insert(zoomAccounts).values(account).returning();
+    const result = await db.insert(zoomAccounts).values(account);
+    const insertId = getInsertId(result);
+    const [zoomAccount] = await db.select().from(zoomAccounts).where(eq(zoomAccounts.id, insertId));
     return zoomAccount;
   }
   
   async updateZoomAccount(id: number, updates: Partial<ZoomAccount>): Promise<ZoomAccount | undefined> {
-    const [updatedAccount] = await db
-      .update(zoomAccounts)
-      .set(updates)
-      .where(eq(zoomAccounts.id, id))
-      .returning();
-    
+    await db.update(zoomAccounts).set(updates).where(eq(zoomAccounts.id, id));
+    const [updatedAccount] = await db.select().from(zoomAccounts).where(eq(zoomAccounts.id, id));
     return updatedAccount;
   }
   
   // Booking operations
   async createBooking(insertBooking: InsertBooking): Promise<Booking> {
     // Create the booking first with pending status and no zoom account
-    const [booking] = await db.insert(bookings)
-      .values({
-        ...insertBooking,
-        zoomAccountId: null,
-        status: "pending"
-      })
-      .returning();
+    const result = await db.insert(bookings).values({
+      ...insertBooking,
+      zoomAccountId: null,
+      status: "pending"
+    });
+    
+    const insertId = getInsertId(result);
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, insertId));
     
     // Find available Zoom account
     const availableAccount = await this.getAvailableZoomAccount(
@@ -149,14 +162,14 @@ export class DatabaseStorage implements IStorage {
     
     if (availableAccount) {
       // Update the booking with the available zoom account
-      const [updatedBooking] = await db.update(bookings)
+      await db.update(bookings)
         .set({
           zoomAccountId: availableAccount.id,
           status: "confirmed"
         })
-        .where(eq(bookings.id, booking.id))
-        .returning();
+        .where(eq(bookings.id, booking.id));
       
+      const [updatedBooking] = await db.select().from(bookings).where(eq(bookings.id, booking.id));
       return updatedBooking;
     }
     
@@ -180,12 +193,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateBooking(id: number, updates: Partial<Booking>): Promise<Booking | undefined> {
-    const [updatedBooking] = await db
-      .update(bookings)
-      .set(updates)
-      .where(eq(bookings.id, id))
-      .returning();
-    
+    await db.update(bookings).set(updates).where(eq(bookings.id, id));
+    const [updatedBooking] = await db.select().from(bookings).where(eq(bookings.id, id));
     return updatedBooking;
   }
   
@@ -208,7 +217,7 @@ export class DatabaseStorage implements IStorage {
     
     // Find the first account that doesn't have time conflicts
     for (const account of activeAccounts) {
-      const accountIsBooked = bookingsOnDate.some((booking) => {
+      const accountIsBooked = bookingsOnDate.some(booking => {
         // Skip if the booking is not for this account
         if (booking.zoomAccountId !== account.id) return false;
         

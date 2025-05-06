@@ -32,10 +32,14 @@ async function comparePasswords(supplied: string, stored: string) {
 
 // Fungsi untuk hapus session lama user (tidak perlu kirim event di sini)
 async function deleteSessionsForUser(userId: number) {
-  await pool.query(`
-    DELETE FROM "session"
-    WHERE (sess->'passport'->>'user')::int = $1
-  `, [userId]);
+  try {
+    await pool.query(`
+      DELETE FROM zoom_sessions
+      WHERE JSON_EXTRACT(sess, '$.passport.user') = ?
+    `, [userId]);
+  } catch (error) {
+    console.error('Error deleting sessions:', error);
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -110,11 +114,11 @@ export function setupAuth(app: Express) {
       // Ambil io dari app
       const io = req.app.get('io');
       // Ambil semua session lama user
-      const { rows } = await pool.query(`
-        SELECT sid FROM "session"
-        WHERE (sess->'passport'->>'user')::int = $1
+      const [results] = await pool.query(`
+        SELECT sid FROM zoom_sessions
+        WHERE JSON_EXTRACT(sess, '$.passport.user') = ?
       `, [user.id]);
-      const oldSessionIds = rows.map((row: any) => row.sid);
+      const oldSessionIds = Array.isArray(results) ? results.map((row: any) => row.sid) : [];
 
       // Hapus semua session lama
       await deleteSessionsForUser(user.id);

@@ -1,17 +1,17 @@
-import { pgTable, text, serial, integer, boolean, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import { mysqlTable, text, int, boolean, timestamp, primaryKey, varchar, datetime } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // User schema
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name").notNull(),
-  department: text("department").notNull(),
-  email: text("email").notNull(),
-  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+export const users = mysqlTable("zoom_users", {
+  id: int("id").primaryKey().autoincrement(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  department: varchar("department", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  role: varchar("role", { length: 50 }).default("user").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -24,11 +24,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 // Zoom accounts schema
-export const zoomAccounts = pgTable("zoom_accounts", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  username: text("username").notNull(),
-  password: text("password").notNull(),
+export const zoomAccounts = mysqlTable("zoom_accounts", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  username: varchar("username", { length: 255 }).notNull(),
+  password: varchar("password", { length: 255 }).notNull(),
   isActive: boolean("is_active").notNull().default(true),
 });
 
@@ -40,22 +40,22 @@ export const insertZoomAccountSchema = createInsertSchema(zoomAccounts).pick({
 });
 
 // Bookings schema
-export const bookings = pgTable("bookings", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  zoomAccountId: integer("zoom_account_id").references(() => zoomAccounts.id),
-  meetingTitle: text("meeting_title").notNull(),
-  meetingDate: text("meeting_date").notNull(),
-  startTime: text("start_time").notNull(),
-  endTime: text("end_time").notNull(),
-  department: text("department").notNull(),
-  participants: integer("participants").notNull(),
-  purpose: text("purpose").notNull(),
+export const bookings = mysqlTable("zoom_bookings", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  zoomAccountId: int("zoom_account_id"),
+  meetingTitle: varchar("meeting_title", { length: 255 }).notNull(),
+  meetingDate: varchar("meeting_date", { length: 50 }).notNull(),
+  startTime: varchar("start_time", { length: 50 }).notNull(),
+  endTime: varchar("end_time", { length: 50 }).notNull(),
+  department: varchar("department", { length: 255 }).notNull(),
+  participants: int("participants").notNull(),
+  purpose: varchar("purpose", { length: 255 }).notNull(),
   needsRecording: boolean("needs_recording").default(false),
   needsBreakoutRooms: boolean("needs_breakout_rooms").default(false),
   needsPolls: boolean("needs_polls").default(false),
-  status: text("status").notNull().default("pending"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  createdAt: datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({

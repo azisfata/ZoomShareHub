@@ -1,6 +1,5 @@
-import pkg from 'pg';
-const { Pool } = pkg;
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
 import * as schema from "@shared/schema";
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -11,15 +10,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Pastikan .env dimuat dengan path yang benar
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-if (!process.env.DATABASE_URL) {
-  // Tampilkan nilai DATABASE_URL untuk debug
-  console.error('DATABASE_URL tidak ditemukan. Nilai env:', process.env);
+if (!process.env.DB_HOST || !process.env.DB_NAME || !process.env.DB_USER || !process.env.DB_PASSWORD) {
+  // Tampilkan nilai env untuk debug
+  console.error('Env DB tidak ditemukan. Nilai env:', process.env);
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "Env DB harus diatur. Apakah Anda lupa untuk mengatur database?",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+// Konfigurasi koneksi MySQL
+const dbConfig = {
+  host: process.env.DB_HOST || '192.168.10.157',
+  database: process.env.DB_NAME || 'kemenkopmk_db_clone',
+  user: process.env.DB_USER || 'sipd',
+  password: process.env.DB_PASSWORD || 's1n3rgh1@',
+};
+
+// Buat koneksi pool MySQL
+export const pool = mysql.createPool(dbConfig);
+
+// Inisialisasi Drizzle ORM dengan koneksi MySQL
+export const db = drizzle(pool, { schema, mode: 'default' });
