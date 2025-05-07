@@ -21,7 +21,6 @@ import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
 const bookingFormSchema = z.object({
   meetingTitle: z.string().min(3, "Judul harus minimal 3 karakter"),
   meetingDate: z.string().min(1, "Tanggal wajib diisi"),
-  department: z.string().min(1, "Departemen wajib diisi"),
   startTime: z.string().min(1, "Waktu mulai wajib diisi"),
   endTime: z.string().min(1, "Waktu selesai wajib diisi"),
   participants: z.coerce.number().min(1, "Minimal 1 peserta diperlukan"),
@@ -52,7 +51,6 @@ export default function RequestForm() {
     defaultValues: {
       meetingTitle: "",
       meetingDate: new Date().toISOString().split('T')[0], // Today's date as default
-      department: "",
       startTime: "",
       endTime: "",
       participants: 1,
@@ -124,32 +122,6 @@ export default function RequestForm() {
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Departemen</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Pilih departemen" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="IT">IT</SelectItem>
-                              <SelectItem value="Marketing">Marketing</SelectItem>
-                              <SelectItem value="Sales">Penjualan</SelectItem>
-                              <SelectItem value="Finance">Keuangan</SelectItem>
-                              <SelectItem value="HR">Sumber Daya Manusia</SelectItem>
-                              <SelectItem value="Operations">Operasional</SelectItem>
-                            </SelectContent>
-                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
