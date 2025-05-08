@@ -34,7 +34,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password minimal 6 karakter"),
   name: z.string().min(2, "Nama minimal 2 karakter"),
   email: z.string().email("Email tidak valid"),
-  department: z.string().min(1, "Pilih departemen"),
+
   role: z.enum(["user", "admin"]).default("user"),
 });
 
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
       name: '',
       username: '',
       password: '',
-      department: '',
+
       email: '',
       role: 'user',
     },
@@ -378,22 +378,6 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="department" className="text-right">Departemen</Label>
-                                <select id="department" {...form.register("department")} className="col-span-3 border rounded px-2 py-1 h-10">
-                                  <option value="">Pilih Departemen</option>
-                                  <option value="IT">IT</option>
-                                  <option value="HRD">HRD</option>
-                                  <option value="Keuangan">Keuangan</option>
-                                  <option value="Marketing">Marketing</option>
-                                  <option value="Operasional">Operasional</option>
-                                </select>
-                                <div className="col-span-4">
-                                  {(form.formState.errors.department && (form.formState.touchedFields.department || form.watch('department') !== '')) && (
-                                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.department.message as string}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="role" className="text-right">Role</Label>
                                 <select id="role" {...form.register("role")} className="col-span-3 border rounded px-2 py-1 h-10">
                                   <option value="user">User</option>
@@ -401,12 +385,11 @@ export default function AdminDashboard() {
                                 </select>
                               </div>
                             </div>
-                            <DialogFooter>
-                              <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isValid}>
-                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Simpan
+                            <div className="flex justify-end">
+                              <Button type="submit" variant="primary" className="w-full md:w-auto">
+                                Tambah User
                               </Button>
-                            </DialogFooter>
+                            </div>
                           </form>
                         </DialogContent>
                       </Dialog>
@@ -418,7 +401,6 @@ export default function AdminDashboard() {
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
                             </tr>
@@ -431,9 +413,6 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm">{user.username}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm">{user.department || "-"}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm capitalize">{user.role || "-"}</div>

@@ -9,7 +9,6 @@ export const users = mysqlTable("zoom_users", {
   username: varchar("username", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  department: varchar("department", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   role: varchar("role", { length: 50 }).default("user").notNull(),
 });
@@ -18,7 +17,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   name: true,
-  department: true,
+
   email: true,
   role: true,
 });
@@ -48,12 +47,9 @@ export const bookings = mysqlTable("zoom_bookings", {
   meetingDate: varchar("meeting_date", { length: 50 }).notNull(),
   startTime: varchar("start_time", { length: 50 }).notNull(),
   endTime: varchar("end_time", { length: 50 }).notNull(),
-  department: varchar("department", { length: 255 }).notNull(),
   participants: int("participants").notNull(),
   purpose: varchar("purpose", { length: 255 }).notNull(),
-  needsRecording: boolean("needs_recording").default(false),
-  needsBreakoutRooms: boolean("needs_breakout_rooms").default(false),
-  needsPolls: boolean("needs_polls").default(false),
+
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   createdAt: datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

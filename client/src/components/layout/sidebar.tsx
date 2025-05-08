@@ -57,8 +57,8 @@ export function Sidebar({ isCollapsed: _isCollapsed, setIsCollapsed: _setIsColla
                 <User className="h-7 w-7" />
               ) : (
                 <div>
-                  <p className="text-sm font-medium truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.department}</p>
+                  <p className="text-sm font-medium whitespace-normal break-words leading-tight max-w-xs md:max-w-md">{user.name}</p>
+                  <p className="text-xs text-gray-500 whitespace-normal break-words leading-tight max-w-xs md:max-w-md">{user.department}</p>
                 </div>
               )}
             </div>

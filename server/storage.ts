@@ -92,8 +92,20 @@ export class DatabaseStorage implements IStorage {
   
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    // Join ke tabel pegawai dan ambil pegawai.nama sebagai name
+    // Join ke unit_kerja untuk ambil nama departemen (unit_kerja.nama_unit_kerja)
+    const [rows] = await pool.query(
+      `SELECT u.*, p.nama AS name, unit_kerja.nama_unit_kerja AS department
+       FROM zoom_users u
+       LEFT JOIN pegawai p ON u.id = p.id
+       LEFT JOIN unit_kerja ON p.unit_kerja_id = unit_kerja.id
+       WHERE u.id = ?`,
+      [id]
+    );
+    if (rows && Array.isArray(rows) && rows.length > 0) {
+      return rows[0];
+    }
+    return undefined;
   }
   
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -215,29 +227,44 @@ export class DatabaseStorage implements IStorage {
         )
       );
     
-    // Find the first account that doesn't have time conflicts
+    // 1. Cek akun yang belum dipakai sama sekali di hari itu
+    const usedAccountIds = new Set(bookingsOnDate.map(b => b.zoomAccountId));
+    const unusedAccounts = activeAccounts.filter(acc => !usedAccountIds.has(acc.id));
+    if (unusedAccounts.length > 0) {
+      // Berikan akun yang belum dipakai sama sekali di hari itu
+      return unusedAccounts[0];
+    }
+
+    // 2. Jika semua akun sudah dipakai di hari itu, cari akun yang tidak bentrok dengan booking baru (buffer 2 jam)
     for (const account of activeAccounts) {
       const accountIsBooked = bookingsOnDate.some(booking => {
-        // Skip if the booking is not for this account
+        // Hanya cek booking pada akun ini
         if (booking.zoomAccountId !== account.id) return false;
-        
-        // Check for time overlap
+        // Check for time overlap + buffer 2 jam setelah bookingEnd
         const bookingStart = booking.startTime;
         const bookingEnd = booking.endTime;
-        
-        const hasOverlap = 
-          (startTime >= bookingStart && startTime < bookingEnd) || 
-          (endTime > bookingStart && endTime <= bookingEnd) ||
-          (startTime <= bookingStart && endTime >= bookingEnd);
-        
+        function timeToMinutes(t: string) {
+          const [h, m] = t.split(":").map(Number);
+          return h * 60 + m;
+        }
+        const bookingStartM = timeToMinutes(bookingStart);
+        const bookingEndM = timeToMinutes(bookingEnd);
+        const bookingStartWithBufferM = bookingStartM - 60; // buffer 1 jam sebelum mulai
+        const bookingEndWithBufferM = bookingEndM + 60; // buffer 1 jam setelah selesai
+        const startM = timeToMinutes(startTime);
+        const endM = timeToMinutes(endTime);
+        // Cek overlap dengan buffer 1 jam sebelum dan sesudah booking
+        const hasOverlap =
+          // Booking baru overlap dengan waktu booking + buffer
+          (startM >= bookingStartWithBufferM && startM < bookingEndWithBufferM) ||
+          (endM > bookingStartWithBufferM && endM <= bookingEndWithBufferM) ||
+          (startM <= bookingStartWithBufferM && endM >= bookingEndWithBufferM);
         return hasOverlap;
       });
-      
       if (!accountIsBooked) {
         return account;
       }
     }
-    
     return undefined;
   }
 }

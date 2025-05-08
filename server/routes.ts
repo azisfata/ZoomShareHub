@@ -69,15 +69,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
       
-      // Get the user to access their department
+      // Get the user data
       const user = await storage.getUser(req.user.id);
       if (!user) return res.status(404).json({ message: "User not found" });
       
-      // Validate request body and add department from user data
+      // Validate request body
       const validatedData = insertBookingSchema.parse({
         ...req.body,
         userId: req.user.id,
-        department: user.department // Automatically use the user's department
+        // User ID sudah ditambahkan di atas
       });
       
       // Create the booking

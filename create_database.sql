@@ -39,9 +39,6 @@ CREATE TABLE IF NOT EXISTS `zoom_bookings` (
   `department` varchar(255) NOT NULL,
   `participants` int NOT NULL,
   `purpose` varchar(255) NOT NULL,
-  `needs_recording` tinyint(1) DEFAULT 0,
-  `needs_breakout_rooms` tinyint(1) DEFAULT 0,
-  `needs_polls` tinyint(1) DEFAULT 0,
   `status` varchar(50) NOT NULL DEFAULT 'pending',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

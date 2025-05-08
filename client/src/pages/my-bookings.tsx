@@ -30,7 +30,7 @@ type BookingWithZoomAccount = {
   meetingDate: string;
   startTime: string;
   endTime: string;
-  department: string;
+
   participants: number;
   purpose: string;
   needsRecording: boolean;

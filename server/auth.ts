@@ -62,11 +62,12 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else {
-          return done(null, user);
-        }
+        if (!user) return done(null, false, { message: "User not found" });
+        const isValid = await comparePasswords(password, user.password);
+        if (!isValid) return done(null, false, { message: "Invalid password" });
+        // Ambil user lengkap (dengan nama dan department dari pegawai/unit_kerja)
+        const fullUser = await storage.getUser(user.id);
+        return done(null, fullUser);
       } catch (error) {
         return done(error);
       }
@@ -77,6 +78,10 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
+      if (!user) {
+        // Jika user tidak ditemukan, hapus session
+        return done(null, false);
+      }
       done(null, user);
     } catch (error) {
       done(error);

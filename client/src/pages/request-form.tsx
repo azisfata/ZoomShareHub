@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { CredentialsModal } from "@/components/modals/credentials-modal";
 import { Booking, InsertBooking, ZoomAccount } from "@shared/schema";
 import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
+import { useToast } from "@/hooks/use-toast";
 
 const bookingFormSchema = z.object({
   meetingTitle: z.string().min(3, "Judul harus minimal 3 karakter"),
@@ -46,6 +47,9 @@ export default function RequestForm() {
     endTime: string;
   } | null>(null);
   
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -72,6 +76,15 @@ export default function RequestForm() {
           endTime: data.booking.endTime,
         });
         setShowCredentials(true);
+      } else {
+        // Tampilkan toast notifikasi jika tidak mendapat akun Zoom
+        toast({
+          title: "Tidak ada akun Zoom yang tersedia",
+          description: "Semua akun Zoom sedang dipakai. Silakan menghubungi admin untuk bantuan lebih lanjut.",
+          variant: "destructive",
+        });
+        // Redirect ke halaman utama
+        setLocation("/");
       }
     },
   });
