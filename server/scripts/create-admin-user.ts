@@ -7,7 +7,7 @@ async function createAdminUser() {
   console.log('Checking for admin user...');
   
   // Cek apakah sudah ada user dengan role admin
-  const adminUsers = await db.select().from(users).where(eq(users.role, 'admin'));
+  const adminUsers = await db.select().from(users).where(eq(users.role, 1));
   
   if (adminUsers.length > 0) {
     console.log('Admin user already exists:', adminUsers[0].username);
@@ -27,7 +27,7 @@ async function createAdminUser() {
     name: 'Administrator',
     department: 'IT',
     email: 'admin@example.com',
-    role: 'admin'
+    role: 1 // admin role
   };
   
   // Insert user admin ke database

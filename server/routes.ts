@@ -25,10 +25,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    if (req.user.role !== 'admin') {
+    console.log('Admin check - User:', { 
+      id: req.user.id, 
+      username_ldap: req.user.username_ldap, 
+      role_id: req.user.role_id,
+      role_id_type: typeof req.user.role_id
+    });
+    
+    if (req.user.role_id != 1) { // Menggunakan perbandingan longgar (==) karena mungkin tipe datanya berbeda
+      console.log('Access denied - role_id is not 1');
       return res.status(403).json({ message: "Akses ditolak, hak akses admin diperlukan" });
     }
     
+    console.log('Admin access granted');
     next();
   };
 
@@ -221,12 +230,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Get users with department and role
+      if (!req.user) return res.status(401).json({ message: "Unauthorized" });
       const users = allUsers.map(user => ({
         id: user.id,
         name: user.name,
-        username: user.username,
+        username: user.username_ldap,
         department: user.department,
-        role: user.role
+        role: user.role_id // Tetap gunakan nama properti 'role' untuk kompatibilitas dengan client
       }));
 
       res.json({

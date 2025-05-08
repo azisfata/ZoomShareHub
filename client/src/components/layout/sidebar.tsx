@@ -1,10 +1,11 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { User as UserType } from '@shared/schema';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { LogOut, Home, CalendarDays, PlusCircle, Settings, User } from 'lucide-react';
+import { LogOut, Home, CalendarDays, PlusCircle, Settings, User as UserIcon } from 'lucide-react';
 import { useSidebarCollapse } from "@/contexts/SidebarCollapseContext";
 
 interface SidebarProps {
@@ -54,7 +55,7 @@ export function Sidebar({ isCollapsed: _isCollapsed, setIsCollapsed: _setIsColla
           <div className="mb-8">
             <div className={`py-3 ${isCollapsed ? 'px-1' : 'px-4'} bg-neutral-100 rounded-lg flex items-center justify-center`}>
               {isCollapsed ? (
-                <User className="h-7 w-7" />
+                <UserIcon className="h-7 w-7" />
               ) : (
                 <div>
                   <p className="text-sm font-medium whitespace-normal break-words leading-tight max-w-xs md:max-w-md">{user.name}</p>
@@ -103,7 +104,7 @@ export function Sidebar({ isCollapsed: _isCollapsed, setIsCollapsed: _setIsColla
                 </span>
               </Link>
             </li>
-            {user?.role === 'admin' && (
+            {user?.role_id === 1 && (
               <li>
                 <Link href="/admin">
                   <span className={`flex items-center ${isCollapsed ? 'justify-center' : ''} ${isCollapsed ? 'px-0' : 'px-4'} py-2 rounded-lg hover:bg-neutral-100 ${isActive('/admin') ? 'bg-neutral-100' : ''}`}

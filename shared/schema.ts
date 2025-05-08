@@ -3,23 +3,20 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 
-// User schema
-export const users = mysqlTable("zoom_users", {
+// User schema - menggunakan tabel users yang sudah ada
+export const users = mysqlTable("users", {
   id: int("id").primaryKey().autoincrement(),
-  username: varchar("username", { length: 255 }).notNull().unique(),
+  pegawai_id: int("pegawai_id").notNull(),
+  username_ldap: varchar("username_ldap", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  role: varchar("role", { length: 50 }).default("user").notNull(),
+  role_id: int("role_id").default(4).notNull(), // 1 = admin, 4 = user
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  pegawai_id: true,
+  username_ldap: true,
   password: true,
-  name: true,
-
-  email: true,
-  role: true,
+  role_id: true,
 });
 
 // Zoom accounts schema
@@ -83,7 +80,10 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
 
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type User = typeof users.$inferSelect & {
+  name?: string;
+  department?: string;
+};
 
 export type InsertZoomAccount = z.infer<typeof insertZoomAccountSchema>;
 export type ZoomAccount = typeof zoomAccounts.$inferSelect;

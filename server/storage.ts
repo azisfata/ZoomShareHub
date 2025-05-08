@@ -22,7 +22,7 @@ const MySQLSessionStore = MySQLStore(session);
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByLdapUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   deleteUser(id: number): Promise<boolean>;
@@ -96,33 +96,69 @@ export class DatabaseStorage implements IStorage {
     // Join ke unit_kerja untuk ambil nama departemen (unit_kerja.nama_unit_kerja)
     const [rows] = await pool.query(
       `SELECT u.*, p.nama AS name, unit_kerja.nama_unit_kerja AS department
-       FROM zoom_users u
-       LEFT JOIN pegawai p ON u.id = p.id
+       FROM users u
+       LEFT JOIN pegawai p ON u.pegawai_id = p.id
        LEFT JOIN unit_kerja ON p.unit_kerja_id = unit_kerja.id
        WHERE u.id = ?`,
       [id]
-    );
-    if (rows && Array.isArray(rows) && rows.length > 0) {
+    ) as [User[], any];
+    if (Array.isArray(rows) && rows.length > 0) {
       return rows[0];
     }
     return undefined;
   }
   
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+  async getUserByLdapUsername(username: string): Promise<User | undefined> {
+    console.log('Looking for user with username_ldap:', username);
+    const [rows] = await pool.query(
+      `SELECT u.*, p.nama AS name, unit_kerja.nama_unit_kerja AS department
+       FROM users u
+       LEFT JOIN pegawai p ON u.pegawai_id = p.id
+       LEFT JOIN unit_kerja ON p.unit_kerja_id = unit_kerja.id
+       WHERE u.username_ldap = ?`,
+      [username]
+    ) as [User[], any];
+    
+    console.log('Query result:', rows);
+    
+    if (Array.isArray(rows) && rows.length > 0) {
+      console.log('Found user:', rows[0]);
+      return rows[0];
+    }
+    console.log('No user found');
+    return undefined;
   }
   
   async createUser(user: InsertUser): Promise<User> {
     // MySQL tidak mendukung returning(), jadi kita insert dulu lalu query
-    const result = await db.insert(users).values(user);
-    const insertId = getInsertId(result);
-    const [newUser] = await db.select().from(users).where(eq(users.id, insertId));
-    return newUser;
+    const [result] = await pool.query(
+      `INSERT INTO users (pegawai_id, username_ldap, password, role_id)
+       VALUES (?, ?, ?, ?)`,
+      [user.pegawai_id, user.username_ldap, user.password, user.role_id || 4]
+    ) as [any, any];
+    
+    // Ambil user yang baru dibuat dengan join ke pegawai dan unit_kerja
+    const [rows] = await pool.query(
+      `SELECT u.*, p.nama AS name, unit_kerja.nama_unit_kerja AS department
+       FROM users u
+       LEFT JOIN pegawai p ON u.pegawai_id = p.id
+       LEFT JOIN unit_kerja ON p.unit_kerja_id = unit_kerja.id
+       WHERE u.id = ?`,
+      [result.insertId]
+    ) as [User[], any];
+    
+    if (!rows[0]) throw new Error('User created but not found');
+    return rows[0];
   }
   
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    const [rows] = await pool.query(
+      `SELECT u.*, p.nama AS name, unit_kerja.nama_unit_kerja AS department
+       FROM users u
+       LEFT JOIN pegawai p ON u.pegawai_id = p.id
+       LEFT JOIN unit_kerja ON p.unit_kerja_id = unit_kerja.id`
+    ) as [User[], any];
+    return rows;
   }
   
   async deleteUser(id: number): Promise<boolean> {

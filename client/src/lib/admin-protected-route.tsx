@@ -21,7 +21,7 @@ export function AdminProtectedRoute({
     );
   }
 
-  if (!user || user.role !== "admin") {
+  if (!user || user.role_id !== 1) {
     return (
       <Route path={path}>
         <Redirect to="/" />

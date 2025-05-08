@@ -2,8 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { pool } from "./db";
@@ -15,19 +14,15 @@ declare global {
   }
 }
 
-const scryptAsync = promisify(scrypt);
-
 export async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  // Generate hash using bcryptjs
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  // Compare password with bcryptjs
+  return bcrypt.compare(supplied, stored);
 }
 
 // Fungsi untuk hapus session lama user (tidak perlu kirim event di sini)
@@ -61,14 +56,35 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
-        if (!user) return done(null, false, { message: "User not found" });
+        console.log('Login attempt for username:', username);
+        const user = await storage.getUserByLdapUsername(username);
+        if (!user) {
+          console.log('User not found');
+          return done(null, false, { message: "User not found" });
+        }
+        console.log('Found user:', { id: user.id, username_ldap: user.username_ldap });
+        
+        console.log('Stored password hash:', user.password);
+        console.log('Comparing with supplied password:', password);
         const isValid = await comparePasswords(password, user.password);
-        if (!isValid) return done(null, false, { message: "Invalid password" });
+        console.log('Password comparison result:', isValid);
+        
+        if (!isValid) {
+          console.log('Invalid password');
+          return done(null, false, { message: "Invalid password" });
+        }
+
         // Ambil user lengkap (dengan nama dan department dari pegawai/unit_kerja)
         const fullUser = await storage.getUser(user.id);
+        if (!fullUser) {
+          console.log('Full user data not found');
+          return done(null, false, { message: "User data not found" });
+        }
+        
+        console.log('Full user data:', { id: fullUser.id, username_ldap: fullUser.username_ldap, role_id: fullUser.role_id });
         return done(null, fullUser);
       } catch (error) {
+        console.error('Login error:', error);
         return done(error);
       }
     }),
@@ -90,7 +106,7 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const existingUser = await storage.getUserByLdapUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
@@ -148,6 +164,11 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
+        // Log data user yang akan dikirim ke client
+        console.log('Sending user data to client:', {
+          ...userWithoutPassword,
+          sessionId: req.sessionID
+        });
         // Kirim sessionId baru ke client
         res.status(200).json({ ...userWithoutPassword, sessionId: req.sessionID });
       });
@@ -169,6 +190,10 @@ export function setupAuth(app: Express) {
     
     // Remove the password from the response
     const { password, ...userWithoutPassword } = req.user;
+    
+    // Log data user yang akan dikirim ke client
+    console.log('GET /api/user response:', userWithoutPassword);
+    
     res.json(userWithoutPassword);
   });
 }
