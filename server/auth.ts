@@ -26,10 +26,15 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Fungsi untuk hapus session lama user (tidak perlu kirim event di sini)
-// Disabled: Allow multiple concurrent sessions per user. This function is now a no-op.
 async function deleteSessionsForUser(userId: number) {
-  // This function intentionally left blank to allow multiple logins from the same user account.
-  // Previously, this deleted all sessions for the user to enforce single session login.
+  try {
+    await pool.query(`
+      DELETE FROM zoom_sessions
+      WHERE JSON_EXTRACT(sess, '$.passport.user') = ?
+    `, [userId]);
+  } catch (error) {
+    console.error('Error deleting sessions:', error);
+  }
 }
 
 export function setupAuth(app: Express) {
