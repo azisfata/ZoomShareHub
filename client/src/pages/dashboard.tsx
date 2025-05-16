@@ -195,7 +195,7 @@ export default function Dashboard() {
                         <Monitor className="h-6 w-6 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Akun Tersedia</p>
+                        <p className="text-sm text-gray-600">Akun Tersedia Hari Ini</p>
                         <p className="text-2xl font-bold">{stats?.availableAccountsCount}</p>
                       </div>
                     </div>
@@ -209,7 +209,7 @@ export default function Dashboard() {
                         <Calendar className="h-6 w-6 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Sedang Digunakan</p>
+                        <p className="text-sm text-gray-600">Sedang Digunakan Hari Ini</p>
                         <p className="text-2xl font-bold">{stats?.bookedAccountsCount}</p>
                       </div>
                     </div>
