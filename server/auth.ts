@@ -25,17 +25,6 @@ async function comparePasswords(supplied: string, stored: string) {
   return bcrypt.compare(supplied, stored);
 }
 
-// Fungsi untuk hapus session lama user (tidak perlu kirim event di sini)
-async function deleteSessionsForUser(userId: number) {
-  try {
-    await pool.query(`
-      DELETE FROM zoom_sessions
-      WHERE JSON_EXTRACT(sess, '$.passport.user') = ?
-    `, [userId]);
-  } catch (error) {
-    console.error('Error deleting sessions:', error);
-  }
-}
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
@@ -132,52 +121,24 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-      // Ambil io dari app
-      const io = req.app.get('io');
-      // Ambil semua session lama user
-      const [results] = await pool.query(`
-        SELECT sid FROM zoom_sessions
-        WHERE JSON_EXTRACT(sess, '$.passport.user') = ?
-      `, [user.id]);
-      const oldSessionIds = Array.isArray(results) ? results.map((row: any) => row.sid) : [];
-
-      // Hapus semua session lama
-      await deleteSessionsForUser(user.id);
-
-      // Kirim force_logout ke semua session lama
-      if (io) {
-        // Broadcast ke semua socket dalam room user
-        io.to(`user:${user.id}`).emit('force_logout', {
-          message: 'Anda telah login di perangkat lain. Sesi ini akan berakhir.',
-          sessionId: null
-        });
-        
-        // Juga kirim ke semua session lama secara spesifik
-        for (const sid of oldSessionIds) {
-          io.to(`session:${sid}`).emit('force_logout', {
-            message: 'Anda telah login di perangkat lain. Sesi ini akan berakhir.',
-            sessionId: sid
-          });
-        }
-      }
-
+      // Log login berhasil
+      console.log(`User ${user.username_ldap} logged in successfully`);
+      
+      // Login user
       req.login(user, (err) => {
         if (err) return next(err);
+        // Remove password from response
         const { password, ...userWithoutPassword } = user;
-        // Log data user yang akan dikirim ke client
-        console.log('Sending user data to client:', {
-          ...userWithoutPassword,
-          sessionId: req.sessionID
-        });
-        // Kirim sessionId baru ke client
-        res.status(200).json({ ...userWithoutPassword, sessionId: req.sessionID });
+        return res.json(userWithoutPassword);
       });
     })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
+    // Hanya logout session saat ini
     req.logout((err) => {
       if (err) return next(err);
+      // Hapus session saat ini
       req.session.destroy((err) => {
         if (err) return next(err);
         res.sendStatus(200);
