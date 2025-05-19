@@ -64,11 +64,22 @@ export default function RequestForm() {
   
   const bookingMutation = useMutation({
     mutationFn: async (data: BookingFormValues) => {
-      const res = await apiRequest("POST", "/api/bookings", data);
-      return res.json();
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Gagal membuat permintaan");
+      }
+      return result;
     },
-    onSuccess: (data: { booking: Booking, zoomAccount: ZoomAccount | null }) => {
-      if (data.zoomAccount) {
+    onSuccess: (data) => {
+      if (data.success && data.zoomAccount) {
+        // Jika booking berhasil dan mendapatkan akun Zoom
         setZoomAccount(data.zoomAccount);
         setMeetingDetails({
           date: data.booking.meetingDate,
@@ -76,16 +87,24 @@ export default function RequestForm() {
           endTime: data.booking.endTime,
         });
         setShowCredentials(true);
-      } else {
-        // Tampilkan toast notifikasi jika tidak mendapat akun Zoom
+        // Reset form setelah berhasil booking
+        form.reset();
+      } else if (!data.success) {
+        // Tampilkan toast notifikasi jika tidak ada akun Zoom yang tersedia
         toast({
           title: "Tidak ada akun Zoom yang tersedia",
-          description: "Semua akun Zoom sedang dipakai. Silakan menghubungi admin untuk bantuan lebih lanjut.",
+          description: "Silakan coba jadwal lain atau hubungi admin untuk bantuan lebih lanjut.",
           variant: "destructive",
         });
-        // Redirect ke halaman utama
-        setLocation("/");
+        // Form tetap terbuka, tidak ada redirect
       }
+    },
+    onError: (error) => {
+      toast({
+        title: "Terjadi kesalahan",
+        description: error.message || "Gagal membuat permintaan",
+        variant: "destructive",
+      });
     },
   });
   

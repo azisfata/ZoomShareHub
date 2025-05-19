@@ -89,17 +89,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User ID sudah ditambahkan di atas
       });
       
-      // Create the booking
-      const booking = await storage.createBooking(validatedData);
+      // Validasi jadwal tidak boleh kurang dari waktu saat ini
+      const now = new Date();
+      const meetingDateTime = new Date(`${validatedData.meetingDate} ${validatedData.startTime}`);
       
-      // If booking was confirmed with a Zoom account, return the account details
-      if (booking.status === "confirmed" && booking.zoomAccountId) {
-        const zoomAccount = await storage.getZoomAccount(booking.zoomAccountId);
-        return res.status(201).json({ booking, zoomAccount });
+      if (meetingDateTime < now) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
+        });
       }
       
-      // Otherwise just return the booking
-      res.status(201).json({ booking, zoomAccount: null });
+      // Create the booking (will only be created if Zoom account is available)
+      const { booking, zoomAccount } = await storage.createBooking(validatedData);
+      
+      if (!booking || !zoomAccount) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Tidak ada akun Zoom yang tersedia, silakan coba jadwal lain atau hubungi admin." 
+        });
+      }
+      
+      // Return the booking and zoom account details
+      res.status(201).json({ 
+        success: true,
+        booking, 
+        zoomAccount 
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid booking data", errors: error.errors });

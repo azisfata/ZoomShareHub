@@ -190,38 +190,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Booking operations
-  async createBooking(insertBooking: InsertBooking): Promise<Booking> {
-    // Create the booking first with pending status and no zoom account
+  async createBooking(insertBooking: InsertBooking): Promise<{booking: Booking | null, zoomAccount: ZoomAccount | null}> {
+    // Cari dulu akun Zoom yang tersedia
+    const availableAccount = await this.getAvailableZoomAccount(
+      insertBooking.meetingDate,
+      insertBooking.startTime,
+      insertBooking.endTime
+    );
+    
+    // Jika tidak ada akun yang tersedia, return null untuk booking
+    if (!availableAccount) {
+      return { booking: null, zoomAccount: null };
+    }
+    
+    // Jika ada akun yang tersedia, buat booking baru dengan status confirmed
     const result = await db.insert(bookings).values({
       ...insertBooking,
-      zoomAccountId: null,
-      status: "pending"
+      zoomAccountId: availableAccount.id,
+      status: "confirmed"
     });
     
     const insertId = getInsertId(result);
     const [booking] = await db.select().from(bookings).where(eq(bookings.id, insertId));
     
-    // Find available Zoom account
-    const availableAccount = await this.getAvailableZoomAccount(
-      booking.meetingDate,
-      booking.startTime,
-      booking.endTime
-    );
-    
-    if (availableAccount) {
-      // Update the booking with the available zoom account
-      await db.update(bookings)
-        .set({
-          zoomAccountId: availableAccount.id,
-          status: "confirmed"
-        })
-        .where(eq(bookings.id, booking.id));
-      
-      const [updatedBooking] = await db.select().from(bookings).where(eq(bookings.id, booking.id));
-      return updatedBooking;
-    }
-    
-    return booking;
+    return { booking, zoomAccount: availableAccount };
   }
   
   async getBooking(id: number): Promise<Booking | undefined> {
