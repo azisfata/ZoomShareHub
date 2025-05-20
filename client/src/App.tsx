@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import RequestForm from "@/pages/request-form";
+import PublicRequestForm from "@/pages/public-request-form";
 import MyBookings from "@/pages/my-bookings";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
@@ -22,6 +23,7 @@ function Router() {
       <ProtectedRoute path="/request" component={RequestForm} />
       <AdminProtectedRoute path="/admin" component={AdminDashboard} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/formzoom" component={PublicRequestForm} />
       <Route component={NotFound} />
     </Switch>
   );

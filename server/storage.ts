@@ -26,6 +26,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   deleteUser(id: number): Promise<boolean>;
+  getPegawaiById(pegawaiId: number): Promise<{id: number, nama: string, unit_kerja?: string} | null>;
   
   // Zoom account operations
   getZoomAccount(id: number): Promise<ZoomAccount | undefined>;
@@ -48,6 +49,27 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Session store
   sessionStore: Store;
+  
+  // Mendapatkan data pegawai berdasarkan ID
+  async getPegawaiById(pegawaiId: number): Promise<{id: number, nama: string, unit_kerja?: string} | null> {
+    try {
+      const [rows] = await pool.query(
+        `SELECT p.id, p.nama, unit_kerja.nama_unit_kerja AS unit_kerja
+         FROM pegawai p
+         LEFT JOIN unit_kerja ON p.unit_kerja_id = unit_kerja.id
+         WHERE p.id = ?`,
+        [pegawaiId]
+      ) as [any[], any];
+      
+      if (Array.isArray(rows) && rows.length > 0) {
+        return rows[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting pegawai by ID:', error);
+      return null;
+    }
+  }
   
   constructor() {
     this.sessionStore = new MySQLSessionStore({ 

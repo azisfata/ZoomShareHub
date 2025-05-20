@@ -46,6 +46,7 @@ export const bookings = mysqlTable("zoom_bookings", {
   endTime: varchar("end_time", { length: 50 }).notNull(),
   participants: int("participants").notNull(),
   purpose: varchar("purpose", { length: 255 }).notNull(),
+  kode_tiket: varchar("kode_tiket", { length: 255 }),
 
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   createdAt: datetime("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),

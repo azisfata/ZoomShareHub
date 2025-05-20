@@ -7,6 +7,18 @@ import { z } from "zod";
 import { insertBookingSchema } from "@shared/schema";
 import { insertUserSchema } from "@shared/schema";
 
+// Schema untuk permintaan booking publik
+const publicBookingSchema = z.object({
+  meetingTitle: z.string().min(3, "Judul harus minimal 3 karakter"),
+  meetingDate: z.string().min(1, "Tanggal wajib diisi"),
+  startTime: z.string().min(1, "Waktu mulai wajib diisi"),
+  endTime: z.string().min(1, "Waktu selesai wajib diisi"),
+  participants: z.coerce.number().min(1, "Minimal 1 peserta diperlukan"),
+  purpose: z.string().min(5, "Tujuan harus minimal 5 karakter"),
+  pegawaiId: z.string().min(1, "ID Pegawai wajib diisi"),
+  kodeTiket: z.string().min(1, "Kode Tiket wajib diisi")
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
@@ -102,6 +114,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create the booking (will only be created if Zoom account is available)
       const { booking, zoomAccount } = await storage.createBooking(validatedData);
+      
+      if (!booking || !zoomAccount) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Tidak ada akun Zoom yang tersedia, silakan coba jadwal lain atau hubungi admin." 
+        });
+      }
+      
+      // Return the booking and zoom account details
+      res.status(201).json({ 
+        success: true,
+        booking, 
+        zoomAccount 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid booking data", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+  
+  // Endpoint untuk mendapatkan data pegawai berdasarkan ID
+  app.get("/api/pegawai/:id", async (req, res, next) => {
+    try {
+      const pegawaiId = parseInt(req.params.id);
+      if (isNaN(pegawaiId)) {
+        return res.status(400).json({ success: false, message: "ID Pegawai tidak valid" });
+      }
+      
+      const pegawai = await storage.getPegawaiById(pegawaiId);
+      if (!pegawai) {
+        return res.status(404).json({ success: false, message: "Pegawai tidak ditemukan" });
+      }
+      
+      res.status(200).json({ success: true, pegawai });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Endpoint untuk permintaan booking publik (tidak memerlukan autentikasi)
+  app.post("/api/public-bookings", async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = publicBookingSchema.parse(req.body);
+      
+      // Validasi jadwal tidak boleh kurang dari waktu saat ini
+      const now = new Date();
+      const meetingDateTime = new Date(`${validatedData.meetingDate} ${validatedData.startTime}`);
+      
+      if (meetingDateTime < now) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
+        });
+      }
+      
+      // Buat objek booking dengan pegawaiId sebagai userId dan kode_tiket dalam field terpisah
+      const bookingData = {
+        meetingTitle: validatedData.meetingTitle,
+        meetingDate: validatedData.meetingDate,
+        startTime: validatedData.startTime,
+        endTime: validatedData.endTime,
+        participants: validatedData.participants,
+        purpose: validatedData.purpose,
+        userId: parseInt(validatedData.pegawaiId), // Simpan pegawaiId di field userId
+        kode_tiket: validatedData.kodeTiket // Simpan kode_tiket di field kode_tiket
+      };
+      
+      // Create the booking
+      const { booking, zoomAccount } = await storage.createBooking(bookingData);
       
       if (!booking || !zoomAccount) {
         return res.status(400).json({ 
