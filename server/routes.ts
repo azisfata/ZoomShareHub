@@ -293,22 +293,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         kode_tiket: validatedData.kodeTiket // Simpan kode_tiket di field kode_tiket
       };
       
-      // Create the booking
-      const { booking, zoomAccount } = await storage.createBooking(bookingData);
+      // Mulai transaksi database
+      const connection = await pool.getConnection();
+      await connection.beginTransaction();
       
-      if (!booking || !zoomAccount) {
-        return res.status(400).json({ 
-          success: false,
-          message: "Tidak ada akun Zoom yang tersedia, silakan coba jadwal lain atau hubungi admin." 
+      try {
+        // Create the booking
+        const { booking, zoomAccount } = await storage.createBooking(bookingData);
+        
+        if (!booking || !zoomAccount) {
+          await connection.rollback();
+          return res.status(400).json({ 
+            success: false,
+            message: "Tidak ada akun Zoom yang tersedia, silakan coba jadwal lain atau hubungi admin." 
+          });
+        }
+        
+        // Update status tiket
+        const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        await connection.query(
+          `UPDATE tiket 
+           SET status = 4, 
+               tanggal_status_terkini = ?,
+               updated_at = ?
+           WHERE kode_tiket = ?`,
+          [currentTime, currentTime, validatedData.kodeTiket]
+        );
+        
+        // Commit transaksi jika semua berhasil
+        await connection.commit();
+        
+        // Return the booking and zoom account details
+        res.status(201).json({ 
+          success: true,
+          booking, 
+          zoomAccount 
         });
+        
+      } catch (error) {
+        // Rollback transaksi jika terjadi error
+        await connection.rollback();
+        console.error('Error during booking:', error);
+        next(error);
+      } finally {
+        // Selalu lepaskan koneksi
+        await connection.release();
       }
-      
-      // Return the booking and zoom account details
-      res.status(201).json({ 
-        success: true,
-        booking, 
-        zoomAccount 
-      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid booking data", errors: error.errors });
