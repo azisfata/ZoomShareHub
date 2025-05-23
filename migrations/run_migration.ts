@@ -21,7 +21,7 @@ if (!process.env.DB_HOST || !process.env.DB_NAME || !process.env.DB_USER || !pro
 // Konfigurasi koneksi MySQL
 const dbConfig = {
   host: process.env.DB_HOST || '192.168.10.157',
-  database: process.env.DB_NAME || 'kemenkopmk_db_clone',
+  database: process.env.DB_NAME || 'kemenkopmk_db',
   user: process.env.DB_USER || 'sipd',
   password: process.env.DB_PASSWORD || 's1n3rgh1@',
 };

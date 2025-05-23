@@ -78,7 +78,7 @@ export class DatabaseStorage implements IStorage {
       port: 3306,
       user: process.env.DB_USER || 'sipd',
       password: process.env.DB_PASSWORD || 's1n3rgh1@',
-      database: process.env.DB_NAME || 'kemenkopmk_db_clone',
+      database: process.env.DB_NAME || 'kemenkopmk_db',
       // Gunakan tabel zoom_sessions
       schema: {
         tableName: 'zoom_sessions',

@@ -346,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await connection.query(
             `INSERT INTO tiket_chat 
              (tiket_id, pengirim_id, jenis_pengirim, isi, lampiran, is_read, created_at, updated_at, lampiran_mime, lampiran_nama)
-             VALUES (?, 15, 'system', ?, NULL, 0, NOW(), NULL, NULL, NULL)`,
+             VALUES (?, 0, 'system', ?, NULL, 0, NOW(), NULL, NULL, NULL)`,
             [ticketId, message]
           );
           
