@@ -173,43 +173,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint untuk validasi kode tiket
   app.get("/api/validate-tiket/:kode", async (req, res, next) => {
+    const connection = await pool.getConnection();
     try {
       const kodeTiket = req.params.kode;
-      if (!kodeTiket) {
-        return res.status(400).json({ success: false, message: "Kode tiket tidak valid" });
+      console.log('Validating ticket code:', kodeTiket); // Log untuk debugging
+      
+      if (!kodeTiket || kodeTiket.trim() === '') {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Kode tiket tidak valid",
+          isValid: false
+        });
       }
       
+      // Periksa apakah kode tiket ada di database
+      const [ticketRows] = await connection.query(
+        `SELECT t.*, p.nama as nama_pegawai 
+         FROM tiket t 
+         LEFT JOIN pegawai p ON t.pemohon_id = p.id 
+         WHERE t.kode_tiket = ?`,
+        [kodeTiket]
+      ) as any;
+      
+      if (!Array.isArray(ticketRows) || ticketRows.length === 0) {
+        console.log('Kode tiket tidak ditemukan:', kodeTiket); // Log untuk debugging
+        return res.status(200).json({ 
+          success: true, 
+          isValid: false,
+          message: "Kode tiket tidak terdaftar"
+        });
+      }
+      
+      const ticketData = ticketRows[0];
+      
       // Periksa apakah kode tiket sudah digunakan di tabel zoom_bookings
-      const [existingBooking] = await pool.query(
+      const [existingBooking] = await connection.query(
         `SELECT id FROM zoom_bookings WHERE kode_tiket = ?`,
         [kodeTiket]
       ) as any;
       
-      if (Array.isArray(existingBooking) && existingBooking.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Kode tiket sudah digunakan. Silakan gunakan kode tiket yang lain.",
-          isAlreadyUsed: true
+      const isAlreadyUsed = Array.isArray(existingBooking) && existingBooking.length > 0;
+      
+      if (isAlreadyUsed) {
+        console.log('Kode tiket sudah digunakan:', kodeTiket); // Log untuk debugging
+        return res.status(200).json({ 
+          success: true,
+          isValid: false,
+          isAlreadyUsed: true,
+          message: "Kode tiket sudah digunakan. Silakan gunakan kode tiket yang lain."
         });
       }
       
-      // Periksa kode tiket dan dapatkan data pegawai
-      const [rows] = await pool.query(
-        `SELECT t.*, p.nama as nama_pegawai 
-         FROM tiket t 
-         LEFT JOIN pegawai p ON t.pemohon_id = p.id 
-         WHERE t.kode_tiket = ?`, 
-        [kodeTiket]
-      ) as any;
-      
-      const ticketData = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-      const isValid = !!ticketData;
-      
+      // Jika sampai sini, berarti kode tiket valid dan belum digunakan
+      console.log('Kode tiket valid:', kodeTiket); // Log untuk debugging
       res.status(200).json({ 
         success: true, 
-        isValid,
-        employeeName: ticketData?.nama_pegawai || null,
-        isAlreadyUsed: false
+        isValid: true,
+        isAlreadyUsed: false,
+        employeeName: ticketData.nama_pegawai || null,
+        message: "Kode tiket valid"
       });
     } catch (error) {
       console.error('Error validating ticket code:', error);
