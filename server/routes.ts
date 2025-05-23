@@ -326,6 +326,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('Updated ticket status at (WIB):', currentTime);
         
+        // Get ticket ID for the chat message
+        const [ticketRows] = await connection.query(
+          'SELECT id FROM tiket WHERE kode_tiket = ?',
+          [validatedData.kodeTiket]
+        ) as any;
+        
+        if (Array.isArray(ticketRows) && ticketRows.length > 0) {
+          const ticketId = ticketRows[0].id;
+          const message = 'Yth. Bapak/Ibu\r\nBersama ini kami informasikan akun Zoom untuk menjadwalkan Virtual Meeting\r\n\r\n' +
+                        'username: viconpmk7@kemenkopmk.go.id\r\n' +
+                        'password: SirsaK#2025\r\n\r\n' +
+                        'Mohon konfirmasi H-1 apabila akun tersebut batal digunakan.\r\n' +
+                        'Kami juga mengimbau untuk perekaman Zoom Meeting disimpan di komputer lokal masing-masing ' +
+                        'atau segara mengunduh hasil rekaman rapat dari Zoom Cloud.\r\n\r\n' +
+                        'Demikian disampaikan, terima kasih.\r\n';
+          
+          // Insert new chat message
+          await connection.query(
+            `INSERT INTO tiket_chat 
+             (tiket_id, pengirim_id, jenis_pengirim, isi, lampiran, is_read, created_at, updated_at, lampiran_mime, lampiran_nama)
+             VALUES (?, 15, 'system', ?, NULL, 0, NOW(), NULL, NULL, NULL)`,
+            [ticketId, message]
+          );
+          
+          console.log('Added chat message for ticket ID:', ticketId);
+        } else {
+          console.error('Ticket not found for kode_tiket:', validatedData.kodeTiket);
+        }
+        
         // Commit transaksi jika semua berhasil
         await connection.commit();
         
