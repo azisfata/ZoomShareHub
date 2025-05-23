@@ -309,8 +309,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Update status tiket
-        const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        // Update status tiket with WIB timezone (UTC+7)
+        const now = new Date();
+        // Convert to WIB (UTC+7)
+        now.setHours(now.getHours() + 7);
+        const currentTime = now.toISOString().slice(0, 19).replace('T', ' ');
+        
         await connection.query(
           `UPDATE tiket 
            SET status = 4, 
@@ -319,6 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
            WHERE kode_tiket = ?`,
           [currentTime, currentTime, validatedData.kodeTiket]
         );
+        
+        console.log('Updated ticket status at (WIB):', currentTime);
         
         // Commit transaksi jika semua berhasil
         await connection.commit();
