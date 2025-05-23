@@ -334,9 +334,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (Array.isArray(ticketRows) && ticketRows.length > 0) {
           const ticketId = ticketRows[0].id;
-          const message = 'Yth. Bapak/Ibu\r\nBersama ini kami informasikan akun Zoom untuk menjadwalkan Virtual Meeting\r\n\r\n' +
-                        'username: viconpmk7@kemenkopmk.go.id\r\n' +
-                        'password: SirsaK#2025\r\n\r\n' +
+          
+          // Get Zoom account details for this booking
+          const [zoomAccountRows] = await connection.query(
+            `SELECT za.username, za.password 
+             FROM zoom_bookings zb
+             JOIN zoom_accounts za ON zb.zoom_account_id = za.id
+             WHERE zb.kode_tiket = ?`,
+            [validatedData.kodeTiket]
+          ) as any;
+          
+          if (!Array.isArray(zoomAccountRows) || zoomAccountRows.length === 0) {
+            throw new Error('Zoom account not found for this booking');
+          }
+          
+          const zoomAccount = zoomAccountRows[0];
+          
+          const message = 'Yth. Bapak/Ibu\r\n' +
+                        'Bersama ini kami informasikan akun Zoom untuk menjadwalkan Virtual Meeting\r\n\r\n' +
+                        `*username:* ${zoomAccount.username}\r\n` +
+                        `*password:* ${zoomAccount.password}\r\n\r\n` +
                         'Mohon konfirmasi H-1 apabila akun tersebut batal digunakan.\r\n' +
                         'Kami juga mengimbau untuk perekaman Zoom Meeting disimpan di komputer lokal masing-masing ' +
                         'atau segara mengunduh hasil rekaman rapat dari Zoom Cloud.\r\n\r\n' +
@@ -346,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await connection.query(
             `INSERT INTO tiket_chat 
              (tiket_id, pengirim_id, jenis_pengirim, isi, lampiran, is_read, created_at, updated_at, lampiran_mime, lampiran_nama)
-             VALUES (?, 0, 'system', ?, NULL, 0, NOW(), NULL, NULL, NULL)`,
+             VALUES (?, 15, 'system', ?, NULL, 0, NOW(), NULL, NULL, NULL)`,
             [ticketId, message]
           );
           

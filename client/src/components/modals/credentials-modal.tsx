@@ -99,7 +99,7 @@ export function CredentialsModal({
               queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
               onOpenChange(false);
               // Redirect to the specified URL with kodeTiket
-              window.location.href = `http://103.127.154.23/sinerghi/public/servicedesk/tiket/${kodeTiket}?from=riwayat`;
+              window.location.href = `http://103.127.154.23/sinerghi/public/servicedesk/tiket/${kodeTiket}`;
             }}
           >
             Lihat Pemesanan
