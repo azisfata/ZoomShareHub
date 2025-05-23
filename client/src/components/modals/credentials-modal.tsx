@@ -8,6 +8,7 @@ interface CredentialsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   zoomAccount: ZoomAccount | null;
+  kodeTiket: string;
   meetingDetails: {
     date: string;
     startTime: string;
@@ -19,6 +20,7 @@ export function CredentialsModal({
   open,
   onOpenChange,
   zoomAccount,
+  kodeTiket,
   meetingDetails,
 }: CredentialsModalProps) {
   const [, setLocation] = useLocation();
@@ -96,10 +98,11 @@ export function CredentialsModal({
               queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
               queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
               onOpenChange(false);
-              setLocation("/");
+              // Redirect to the specified URL with kodeTiket
+              window.location.href = `http://103.127.154.23/sinerghi/public/servicedesk/tiket/${kodeTiket}`;
             }}
           >
-            Lihat Pemesanan Saya
+            Lihat Pemesanan
           </Button>
         </DialogFooter>
       </DialogContent>

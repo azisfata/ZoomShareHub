@@ -177,20 +177,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Kode tiket tidak valid" });
       }
       
-      // Periksa apakah kode tiket sudah digunakan di tabel zoom_bookings
-      const [existingBooking] = await pool.query(
-        `SELECT id FROM zoom_bookings WHERE kode_tiket = ?`,
-        [kodeTiket]
-      ) as any;
-      
-      if (Array.isArray(existingBooking) && existingBooking.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Kode tiket sudah digunakan. Silakan gunakan kode tiket yang lain.",
-          isAlreadyUsed: true
-        });
-      }
-      
       // Periksa kode tiket dan dapatkan data pegawai
       const [rows] = await pool.query(
         `SELECT t.*, p.nama as nama_pegawai 
@@ -206,8 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ 
         success: true, 
         isValid,
-        employeeName: ticketData?.nama_pegawai || null,
-        isAlreadyUsed: false
+        employeeName: ticketData?.nama_pegawai || null
       });
     } catch (error) {
       console.error('Error validating ticket code:', error);
@@ -245,20 +230,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           success: false,
           message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
-        });
-      }
-      
-      // Periksa apakah kode tiket sudah digunakan di tabel zoom_bookings
-      const [existingBooking] = await pool.query(
-        `SELECT id FROM zoom_bookings WHERE kode_tiket = ?`,
-        [validatedData.kodeTiket]
-      ) as any;
-      
-      if (Array.isArray(existingBooking) && existingBooking.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Kode tiket sudah digunakan. Silakan gunakan kode tiket yang lain.",
-          isAlreadyUsed: true
         });
       }
       

@@ -45,65 +45,85 @@ export default function PublicRequestForm() {
     startTime: string;
     endTime: string;
   } | null>(null);
-  
-  // Parse query parameters
+
+  // Parse query parameters to get the ticket code
   const searchParams = new URLSearchParams(useSearch());
-  const pegawaiId = searchParams.get('pegawai_id');
-  const kodeTiket = searchParams.get('kode_tiket');
-  
-  // State untuk menyimpan data pegawai
-  const [pegawaiData, setPegawaiData] = useState<{ id: number; nama: string; unit_kerja?: string } | null>(null);
-  const [isLoadingPegawai, setIsLoadingPegawai] = useState(false);
-  
+  // Get the first parameter value (format: ?06010004)
+  const kodeTiket = Array.from(searchParams.keys())[0] || '';
+
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // State untuk status validasi tiket
+  const [isValidatingTicket, setIsValidatingTicket] = useState(true);
+  const [ticketError, setTicketError] = useState<string | null>(null);
+  const [employeeName, setEmployeeName] = useState<string | null>(null);
   
-  // Mengambil data pegawai dan validasi parameter
+  // Validate ticket code
   useEffect(() => {
-    if (!pegawaiId || !kodeTiket) {
-      toast({
-        title: "Akses tidak valid",
-        description: "Link yang Anda gunakan tidak valid atau tidak lengkap.",
-        variant: "destructive",
-      });
-      // Redirect to homepage after 3 seconds
-      const timer = setTimeout(() => {
-        window.location.href = "/";
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-    
-    // Fetch pegawai data
-    const fetchPegawaiData = async () => {
-      setIsLoadingPegawai(true);
+    const validateTicket = async () => {
+      if (!kodeTiket) {
+        setTicketError("Link yang Anda gunakan tidak valid atau tidak lengkap.");
+        setIsValidatingTicket(false);
+        return;
+      }
+      
+      setIsValidatingTicket(true);
       try {
-        const response = await fetch(`/api/pegawai/${pegawaiId}`);
+        const response = await fetch(`/api/validate-tiket/${kodeTiket}`);
         const data = await response.json();
         
-        if (data.success && data.pegawai) {
-          setPegawaiData(data.pegawai);
+        if (!response.ok) {
+          // Handle case when ticket is already used
+          if (data.isAlreadyUsed) {
+            setTicketError("Kode tiket ini sudah digunakan. Silakan gunakan kode tiket yang lain.");
+            
+            // Redirect to the error page after 5 seconds
+            const timer = setTimeout(() => {
+              window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/error";
+            }, 5000);
+            
+            return () => clearTimeout(timer);
+          }
+          
+          throw new Error(data.message || 'Gagal memvalidasi kode tiket');
+        }
+        
+        if (!data.isValid) {
+          setTicketError("Kode tiket yang Anda gunakan tidak terdaftar.");
+          
+          // Redirect ke halaman riwayat setelah 5 detik
+          const timer = setTimeout(() => {
+            window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/riwayat";
+          }, 5000);
+          
+          return () => clearTimeout(timer);
         } else {
-          toast({
-            title: "Data pegawai tidak ditemukan",
-            description: "Tidak dapat menemukan data pegawai dengan ID tersebut.",
-            variant: "destructive",
-          });
+          // Simpan nama pegawai jika kode tiket valid
+          setEmployeeName(data.employeeName);
         }
       } catch (error) {
-        console.error("Error fetching pegawai data:", error);
-        toast({
-          title: "Gagal mengambil data pegawai",
-          description: "Terjadi kesalahan saat mengambil data pegawai.",
-          variant: "destructive",
-        });
+        console.error('Error validating ticket:', error);
+        setTicketError("Terjadi kesalahan saat memvalidasi kode tiket. Silakan coba lagi nanti.");
       } finally {
-        setIsLoadingPegawai(false);
+        setIsValidatingTicket(false);
       }
     };
     
-    fetchPegawaiData();
-  }, [pegawaiId, kodeTiket, toast]);
+    validateTicket();
+  }, [kodeTiket]);
   
+  // Redirect timer effect
+  useEffect(() => {
+    if (ticketError) {
+      const timer = setTimeout(() => {
+        window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/riwayat";
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [ticketError]);
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -126,7 +146,6 @@ export default function PublicRequestForm() {
         },
         body: JSON.stringify({
           ...data,
-          pegawaiId, // Will be stored directly in the user_id field
           kodeTiket  // Will be stored in the kode_tiket field
         }),
       });
@@ -158,12 +177,25 @@ export default function PublicRequestForm() {
         // Form tetap terbuka, tidak ada redirect
       }
     },
-    onError: (error) => {
-      toast({
-        title: "Terjadi kesalahan",
-        description: error.message || "Gagal membuat permintaan",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Check if the error is because the ticket is already used
+      if (error.message.includes('Kode tiket sudah digunakan')) {
+        setTicketError("Kode tiket ini sudah digunakan. Silakan gunakan kode tiket yang lain.");
+        
+        // Redirect to the error page after 5 seconds
+        const timer = setTimeout(() => {
+          window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/error";
+        }, 5000);
+        
+        return () => clearTimeout(timer);
+      } else {
+        // Show a toast for other errors
+        toast({
+          title: "Terjadi kesalahan",
+          description: error.message || "Gagal membuat permintaan",
+          variant: "destructive",
+        });
+      }
     },
   });
   
@@ -171,17 +203,34 @@ export default function PublicRequestForm() {
     bookingMutation.mutate(data);
   };
   
-  // If no pegawai_id or kode_tiket, show loading or error
-  if (!pegawaiId || !kodeTiket) {
+  // Tampilkan loading saat validasi tiket
+  if (isValidatingTicket) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="pt-6 flex flex-col items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <p className="text-center text-muted-foreground">Memvalidasi kode tiket...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  // Tampilkan pesan error jika ada
+  if (ticketError) {
     return (
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="pt-6">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Akses tidak valid</AlertTitle>
-              <AlertDescription>
-                Link yang Anda gunakan tidak valid atau tidak lengkap. Anda akan dialihkan ke halaman utama.
+              <AlertTitle>Kesalahan</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{ticketError}</p>
+                <p className="text-sm text-muted-foreground">
+                  Anda akan dialihkan ke halaman riwayat dalam 5 detik...
+                </p>
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -202,25 +251,16 @@ export default function PublicRequestForm() {
             <AlertTitle>Informasi Permintaan</AlertTitle>
             <AlertDescription>
               <div className="grid grid-cols-1 gap-2 mt-2">
-                {isLoadingPegawai ? (
-                  <div>Memuat data pegawai...</div>
-                ) : pegawaiData ? (
-                  <>
+                <div data-component-name="PublicRequestForm">
+                  <div className="mb-2">
+                    <span className="font-semibold">Kode Tiket:</span> {kodeTiket}
+                  </div>
+                  {employeeName && (
                     <div>
-                      <span className="font-semibold">Nama Pegawai:</span> {pegawaiData.nama}
+                      <span className="font-semibold">Nama Pemohon:</span> {employeeName}
                     </div>
-                    {pegawaiData.unit_kerja && (
-                      <div>
-                        <span className="font-semibold">Unit Kerja:</span> {pegawaiData.unit_kerja}
-                      </div>
-                    )}
-                    <div className="mt-2">
-                      <span className="font-semibold">Kode Tiket:</span> {kodeTiket}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-red-500">Data pegawai tidak ditemukan</div>
-                )}
+                  )}
+                </div>
               </div>
             </AlertDescription>
           </Alert>
@@ -339,6 +379,7 @@ export default function PublicRequestForm() {
         open={showCredentials} 
         onOpenChange={setShowCredentials} 
         zoomAccount={zoomAccount}
+        kodeTiket={kodeTiket}
         meetingDetails={meetingDetails}
       />
     </div>

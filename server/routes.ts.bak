@@ -104,22 +104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validasi jadwal tidak boleh kurang dari waktu saat ini
       const now = new Date();
+      const meetingDateTime = new Date(`${validatedData.meetingDate} ${validatedData.startTime}`);
       
-      // Parse tanggal dan waktu dengan benar
-      const [year, month, day] = validatedData.meetingDate.split('-').map(Number);
-      const [hours, minutes] = validatedData.startTime.split(':').map(Number);
-      
-      // Buat objek Date dengan nilai yang benar (bulan dimulai dari 0 di JavaScript)
-      const meetingDateTime = new Date(year, month - 1, day, hours, minutes);
-      
-      // Hanya validasi jika tanggal meeting adalah hari ini dan waktu sudah lewat
-      const isSameDay = 
-        now.getFullYear() === meetingDateTime.getFullYear() &&
-        now.getMonth() === meetingDateTime.getMonth() &&
-        now.getDate() === meetingDateTime.getDate();
-      
-      // Jika tanggal sama, pastikan waktu meeting belum lewat
-      if (isSameDay && meetingDateTime < now) {
+      if (meetingDateTime < now) {
         return res.status(400).json({ 
           success: false,
           message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
@@ -177,20 +164,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Kode tiket tidak valid" });
       }
       
-      // Periksa apakah kode tiket sudah digunakan di tabel zoom_bookings
-      const [existingBooking] = await pool.query(
-        `SELECT id FROM zoom_bookings WHERE kode_tiket = ?`,
-        [kodeTiket]
-      ) as any;
-      
-      if (Array.isArray(existingBooking) && existingBooking.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Kode tiket sudah digunakan. Silakan gunakan kode tiket yang lain.",
-          isAlreadyUsed: true
-        });
-      }
-      
       // Periksa kode tiket dan dapatkan data pegawai
       const [rows] = await pool.query(
         `SELECT t.*, p.nama as nama_pegawai 
@@ -206,8 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ 
         success: true, 
         isValid,
-        employeeName: ticketData?.nama_pegawai || null,
-        isAlreadyUsed: false
+        employeeName: ticketData?.nama_pegawai || null
       });
     } catch (error) {
       console.error('Error validating ticket code:', error);
@@ -223,42 +195,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validasi jadwal tidak boleh kurang dari waktu saat ini
       const now = new Date();
+      const meetingDateTime = new Date(`${validatedData.meetingDate} ${validatedData.startTime}`);
       
-      // Parse tanggal dan waktu dengan benar
-      const [year, month, day] = validatedData.meetingDate.split('-').map(Number);
-      const [hours, minutes] = validatedData.startTime.split(':').map(Number);
-      
-      // Buat objek Date dengan nilai yang benar (bulan dimulai dari 0 di JavaScript)
-      const meetingDateTime = new Date(year, month - 1, day, hours, minutes);
-      
-      console.log('Current time:', now);
-      console.log('Meeting time:', meetingDateTime);
-      
-      // Hanya validasi jika tanggal meeting adalah hari ini dan waktu sudah lewat
-      const isSameDay = 
-        now.getFullYear() === meetingDateTime.getFullYear() &&
-        now.getMonth() === meetingDateTime.getMonth() &&
-        now.getDate() === meetingDateTime.getDate();
-      
-      // Jika tanggal sama, pastikan waktu meeting belum lewat
-      if (isSameDay && meetingDateTime < now) {
+      if (meetingDateTime < now) {
         return res.status(400).json({ 
           success: false,
           message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
-        });
-      }
-      
-      // Periksa apakah kode tiket sudah digunakan di tabel zoom_bookings
-      const [existingBooking] = await pool.query(
-        `SELECT id FROM zoom_bookings WHERE kode_tiket = ?`,
-        [validatedData.kodeTiket]
-      ) as any;
-      
-      if (Array.isArray(existingBooking) && existingBooking.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Kode tiket sudah digunakan. Silakan gunakan kode tiket yang lain.",
-          isAlreadyUsed: true
         });
       }
       
@@ -354,71 +296,216 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only allow users to view their own bookings
-      if (booking.userId !== req.user.id && req.user.role_id !== 1) {
-        return res.status(403).json({ message: "You are not authorized to view this booking" });
+      if (booking.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
       }
       
-      // Enhance booking with Zoom account details if assigned
-      let enhancedBooking = { ...booking, zoomAccount: null };
+      // Include Zoom account details if assigned
+      let zoomAccount = null;
       if (booking.zoomAccountId) {
-        const zoomAccount = await storage.getZoomAccount(booking.zoomAccountId);
-        enhancedBooking.zoomAccount = zoomAccount || null;
+        zoomAccount = await storage.getZoomAccount(booking.zoomAccountId);
       }
       
-      res.json(enhancedBooking);
+      res.json({ booking, zoomAccount });
     } catch (error) {
       next(error);
     }
   });
   
-  // Get all bookings (admin only)
-  app.get("/api/admin/bookings", authenticateAdmin, async (req, res, next) => {
+  // Cancel a booking
+  app.delete("/api/bookings/:id", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+      
+      const id = parseInt(req.params.id);
+      const booking = await storage.getBooking(id);
+      
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+      
+      // Only allow users to cancel their own bookings
+      if (booking.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Update booking status to cancelled
+      const updatedBooking = await storage.updateBooking(id, { status: "cancelled" });
+      
+      res.json(updatedBooking);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Admin routes
+  
+  // Get admin dashboard stats
+  app.get("/api/admin/stats", authenticateAdmin, async (req, res, next) => {
     try {
       await markCompletedBookings();
+      const allUsers = await storage.getAllUsers();
+      const allZoomAccounts = await storage.getAllZoomAccounts();
       const allBookings = await storage.getAllBookings();
       
-      // Enhance bookings with Zoom account details if assigned
-      const enhancedBookings = await Promise.all(
-        allBookings.map(async (booking) => {
-          if (booking.zoomAccountId) {
-            const zoomAccount = await storage.getZoomAccount(booking.zoomAccountId);
-            return { 
-              ...booking, 
-              zoomAccount: zoomAccount || null 
-            };
-          }
-          return { ...booking, zoomAccount: null };
+      const activeZoomAccounts = allZoomAccounts.filter(acc => acc.isActive);
+      const inactiveZoomAccounts = allZoomAccounts.filter(acc => !acc.isActive);
+      const pendingBookings = allBookings.filter(booking => booking.status === "pending");
+      const completedBookings = allBookings.filter(booking => booking.status === "completed");
+      
+      // Get accounts with their status
+      const accountsWithStatus = allZoomAccounts.map(account => ({
+        id: account.id,
+        name: account.name,
+        username: account.username,
+        isActive: account.isActive
+      }));
+
+      // Get latest bookings with zoom account info
+      const latestBookings = await Promise.all(
+        allBookings.slice(0, 5).map(async (booking) => ({
+          id: booking.id,
+          meetingTitle: booking.meetingTitle,
+          meetingDate: booking.meetingDate,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          status: booking.status,
+          zoomAccount: booking.zoomAccountId 
+            ? await storage.getZoomAccount(booking.zoomAccountId)
+            : undefined
+        }))
+      );
+
+      // Get users with department and role
+      if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+      const users = allUsers.map(user => ({
+        id: user.id,
+        name: user.name,
+        username: user.username_ldap,
+        department: user.department,
+        role: user.role_id // Tetap gunakan nama properti 'role' untuk kompatibilitas dengan client
+      }));
+
+      res.json({
+        totalBookings: allBookings.length,
+        totalUsers: allUsers.length,
+        activeZoomAccounts: activeZoomAccounts.length,
+        inactiveZoomAccounts: inactiveZoomAccounts.length,
+        pendingBookings: pendingBookings.length,
+        completedBookings: completedBookings.length,
+        accountsWithStatus,
+        latestBookings,
+        users
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Create new user (admin only)
+  app.post("/api/admin/users", authenticateAdmin, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertUserSchema.parse(req.body);
+      // Hash password sebelum simpan
+      const hashedPassword = await hashPassword(validatedData.password);
+      const user = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword,
+      });
+      res.status(201).json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid user data", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  // Hapus user (admin only)
+  app.delete("/api/admin/users/:id", authenticateAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID tidak valid" });
+      const user = await storage.getUser(id);
+      if (!user) return res.status(404).json({ message: "User tidak ditemukan" });
+      await storage.deleteUser(id);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // User dashboard stats
+  app.get("/api/dashboard", authenticateUser, async (req, res, next) => {
+    try {
+      const allAccounts = await storage.getAllZoomAccounts();
+      const allBookings = await storage.getAllBookings();
+      const userBookings = await storage.getBookingsByUserId(req.user.id);
+      
+      // Get currently active bookings (assuming they are for today)
+      const today = new Date().toISOString().split('T')[0];
+      const activeBookings = allBookings.filter(booking => 
+        booking.status === "confirmed" && booking.meetingDate === today
+      );
+      
+      // Get accounts with status (calculate if they are currently booked)
+      const accountsWithStatus = await Promise.all(
+        allAccounts.map(async (account) => {
+          const isBooked = activeBookings.some(booking => booking.zoomAccountId === account.id);
+          return {
+            ...account,
+            currentStatus: isBooked ? "in-use" : "available"
+          };
         })
       );
       
-      res.json(enhancedBookings);
+      // Calculate available accounts count
+      const availableAccountsCount = accountsWithStatus.filter(
+        account => account.currentStatus === "available" && account.isActive
+      ).length;
+      
+      // Calculate currently booked accounts count
+      const bookedAccountsCount = accountsWithStatus.filter(
+        account => account.currentStatus === "in-use"
+      ).length;
+      
+      // Calculate user's active bookings count
+      const userActiveBookingsCount = userBookings.filter(
+        booking => booking.status === "confirmed" && booking.meetingDate >= today
+      ).length;
+      
+      const stats = {
+        availableAccountsCount,
+        bookedAccountsCount,
+        userActiveBookingsCount,
+        accountsWithStatus,
+      };
+      
+      res.json(stats);
     } catch (error) {
       next(error);
     }
   });
-  
-  // Create a new HTTP server
+
   const httpServer = createServer(app);
-  
   return httpServer;
 }
 
-// Function to mark bookings as completed if they are in the past
 async function markCompletedBookings() {
-  try {
-    const now = new Date();
-    const allBookings = await storage.getAllBookings();
-    
-    for (const booking of allBookings) {
-      if (booking.status === 'active') {
-        const bookingEndDateTime = new Date(`${booking.meetingDate} ${booking.endTime}`);
-        
-        if (bookingEndDateTime < now) {
-          await storage.updateBooking(booking.id, { status: 'completed' });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error marking completed bookings:', error);
-  }
+  // Implementasi fungsi markCompletedBookings
+  // Contoh:
+  const allBookings = await storage.getAllBookings();
+  const today = new Date().toISOString().split('T')[0];
+  const completedBookings = allBookings.filter(booking => 
+    booking.status === "confirmed" && booking.meetingDate < today
+  );
+  await Promise.all(
+    completedBookings.map(async (booking) => {
+      await storage.updateBooking(booking.id, { status: "completed" });
+    })
+  );
 }

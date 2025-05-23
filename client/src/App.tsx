@@ -23,7 +23,7 @@ function Router() {
       <ProtectedRoute path="/request" component={RequestForm} />
       <AdminProtectedRoute path="/admin" component={AdminDashboard} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/formzoom" component={PublicRequestForm} />
+      <Route path="/pesan" component={PublicRequestForm} />
       <Route component={NotFound} />
     </Switch>
   );
