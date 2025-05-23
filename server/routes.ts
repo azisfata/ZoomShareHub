@@ -112,11 +112,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buat objek Date dengan nilai yang benar (bulan dimulai dari 0 di JavaScript)
       const meetingDateTime = new Date(year, month - 1, day, hours, minutes);
       
+      // Log informasi waktu untuk debugging
+      console.log('Current server time (ISO):', now.toISOString());
+      console.log('Current server time (Local):', now.toString());
+      console.log('Meeting time (Local):', meetingDateTime.toString());
+      console.log('Meeting time (ISO):', meetingDateTime.toISOString());
+      console.log('Time difference (ms):', meetingDateTime.getTime() - now.getTime());
+      
       // Validasi jika waktu meeting sudah lewat dari waktu sekarang
-      if (meetingDateTime <= now) {
+      if (meetingDateTime.getTime() <= now.getTime()) {
+        console.log('Validation failed: Meeting time is in the past');
         return res.status(400).json({ 
           success: false,
-          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari atau sama dengan waktu saat ini." 
+          message: `Tidak dapat membuat booking. Waktu mulai rapat (${meetingDateTime.toLocaleString()}) tidak boleh kurang dari atau sama dengan waktu saat ini (${now.toLocaleString()}).` 
         });
       }
       
@@ -228,11 +236,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Current time:', now);
       console.log('Meeting time:', meetingDateTime);
       
+      // Log informasi waktu untuk debugging
+      console.log('Current server time (ISO):', now.toISOString());
+      console.log('Current server time (Local):', now.toString());
+      console.log('Meeting time (Local):', meetingDateTime.toString());
+      console.log('Meeting time (ISO):', meetingDateTime.toISOString());
+      console.log('Time difference (ms):', meetingDateTime.getTime() - now.getTime());
+      
       // Validasi jika waktu meeting sudah lewat dari waktu sekarang
-      if (meetingDateTime <= now) {
+      if (meetingDateTime.getTime() <= now.getTime()) {
+        console.log('Validation failed: Meeting time is in the past');
         return res.status(400).json({ 
           success: false,
-          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari atau sama dengan waktu saat ini." 
+          message: `Tidak dapat membuat booking. Waktu mulai rapat (${meetingDateTime.toLocaleString()}) tidak boleh kurang dari atau sama dengan waktu saat ini (${now.toLocaleString()}).` 
         });
       }
       
