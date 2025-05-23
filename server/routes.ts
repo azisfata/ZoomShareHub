@@ -112,17 +112,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buat objek Date dengan nilai yang benar (bulan dimulai dari 0 di JavaScript)
       const meetingDateTime = new Date(year, month - 1, day, hours, minutes);
       
-      // Hanya validasi jika tanggal meeting adalah hari ini dan waktu sudah lewat
-      const isSameDay = 
-        now.getFullYear() === meetingDateTime.getFullYear() &&
-        now.getMonth() === meetingDateTime.getMonth() &&
-        now.getDate() === meetingDateTime.getDate();
-      
-      // Jika tanggal sama, pastikan waktu meeting belum lewat
-      if (isSameDay && meetingDateTime < now) {
+      // Validasi jika waktu meeting sudah lewat dari waktu sekarang
+      if (meetingDateTime <= now) {
         return res.status(400).json({ 
           success: false,
-          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
+          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari atau sama dengan waktu saat ini." 
         });
       }
       
@@ -234,17 +228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Current time:', now);
       console.log('Meeting time:', meetingDateTime);
       
-      // Hanya validasi jika tanggal meeting adalah hari ini dan waktu sudah lewat
-      const isSameDay = 
-        now.getFullYear() === meetingDateTime.getFullYear() &&
-        now.getMonth() === meetingDateTime.getMonth() &&
-        now.getDate() === meetingDateTime.getDate();
-      
-      // Jika tanggal sama, pastikan waktu meeting belum lewat
-      if (isSameDay && meetingDateTime < now) {
+      // Validasi jika waktu meeting sudah lewat dari waktu sekarang
+      if (meetingDateTime <= now) {
         return res.status(400).json({ 
           success: false,
-          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari waktu saat ini." 
+          message: "Tidak dapat membuat booking. Waktu mulai rapat tidak boleh kurang dari atau sama dengan waktu saat ini." 
         });
       }
       
