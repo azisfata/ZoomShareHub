@@ -372,14 +372,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const zoomAccount = zoomAccountRows[0];
           
-          const message = 'Yth. Bapak/Ibu\r\n' +
-                        'Bersama ini kami informasikan akun Zoom untuk menjadwalkan Virtual Meeting\r\n\r\n' +
-                        `*username:* ${zoomAccount.username}\r\n` +
-                        `*password:* ${zoomAccount.password}\r\n\r\n` +
-                        'Mohon konfirmasi H-1 apabila akun tersebut batal digunakan.\r\n' +
-                        'Kami juga mengimbau untuk perekaman Zoom Meeting disimpan di komputer lokal masing-masing ' +
-                        'atau segara mengunduh hasil rekaman rapat dari Zoom Cloud.\r\n\r\n' +
-                        'Demikian disampaikan, terima kasih.\r\n';
+          const message = 'Kami informasikan bahwa akun Zoom Meeting yang Anda minta telah tersedia. ' +
+                        'Anda dapat melihat informasi akun pada bagian <strong>Informasi Akun Zoom Meeting di bawah Detail Permohonan</strong> pada halaman ini.\r\n\r\n' +
+                        'Mohon melakukan konfirmasi pada H-1 melalui pesan Whatsapp ke nomor 085169673396 ' +
+                        'apabila akun tersebut batal digunakan. Kami juga mengimbau untuk perekaman Zoom Meeting ' +
+                        'disimpan di komputer lokal masing-masing atau segara mengunduh hasil rekaman rapat dari Zoom Cloud.\r\n\r\n' +
+                        'Demikian disampaikan, terima kasih.\r\n\r\n' +
+                        '--\r\n' +
+                        '<strong>Biro Digitalisasi dan Pengelolaan Informasi</strong>\r\n';
           
           // Insert new chat message
           await connection.query(
