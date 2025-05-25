@@ -206,6 +206,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ticketData = ticketRows[0];
 
+      // Tambahkan validasi id_layanan
+      if (ticketData.id_layanan !== 1) {
+        console.log('Kode tiket tidak valid: id_layanan bukan 1');
+        return res.status(200).json({
+          success: true,
+          isValid: false,
+          message: "Kode tiket tidak valid untuk layanan ini."
+        });
+      }
+
       // Periksa apakah kode tiket sudah digunakan di tabel zoom_bookings
       const [existingBooking] = await connection.query(
         `SELECT id FROM zoom_bookings WHERE kode_tiket = ?`,
@@ -302,6 +312,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const ticketData = ticketRows[0];
+
+      // Tambahkan validasi id_layanan
+      if (ticketData.id_layanan !== 1) {
+        return res.status(400).json({
+          success: false,
+          message: "Kode tiket tidak valid untuk layanan ini."
+        });
+      }
 
       // Buat objek booking dengan pemohon_id sebagai userId dan kode_tiket dalam field terpisah
       const bookingData = {
