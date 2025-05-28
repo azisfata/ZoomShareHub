@@ -33,12 +33,19 @@ async function runMigration() {
     // Buat koneksi MySQL
     const connection = await mysql.createConnection(dbConfig);
     
-    // Baca file SQL untuk menghapus kolom metadata
-    const sql = fs.readFileSync(path.resolve(__dirname, './remove_metadata_from_bookings.sql'), 'utf8');
-    
-    // Jalankan query
-    console.log('Menjalankan query:', sql);
-    await connection.query(sql);
+    // Baca file migrasi
+    const migrationFiles = [
+      '0022_drop_existing_zoom_sessions.sql', // Hapus tabel zoom_sessions yang ada
+      '0021_simple_zoom_sessions.sql'       // Buat tabel zoom_sessions dengan struktur sederhana
+    ];
+
+    for (const file of migrationFiles) {
+      const sql = fs.readFileSync(path.resolve(__dirname, `./${file}`), 'utf8');
+      
+      // Jalankan query
+      console.log('Menjalankan query:', sql);
+      await connection.query(sql);
+    }
     
     console.log('Migrasi berhasil dijalankan!');
     
