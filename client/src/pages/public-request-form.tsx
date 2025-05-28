@@ -80,7 +80,7 @@ export default function PublicRequestForm() {
             
             // Redirect to the error page after 5 seconds
             const timer = setTimeout(() => {
-              window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/error";
+              window.location.href = "http://192.168.10.157/sinerghi/public/servicedesk/error";
             }, 5000);
             
             return () => clearTimeout(timer);
@@ -94,7 +94,7 @@ export default function PublicRequestForm() {
           
           // Redirect ke halaman riwayat setelah 5 detik
           const timer = setTimeout(() => {
-            window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/riwayat";
+            window.location.href = "http://192.168.10.157/sinerghi/public/servicedesk/riwayat";
           }, 5000);
           
           return () => clearTimeout(timer);
@@ -117,7 +117,7 @@ export default function PublicRequestForm() {
   useEffect(() => {
     if (ticketError) {
       const timer = setTimeout(() => {
-        window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/riwayat";
+        window.location.href = "http://192.168.10.157/sinerghi/public/servicedesk/riwayat";
       }, 5000);
       
       return () => clearTimeout(timer);
@@ -184,7 +184,7 @@ export default function PublicRequestForm() {
         
         // Redirect to the error page after 5 seconds
         const timer = setTimeout(() => {
-          window.location.href = "http://103.127.154.23/sinerghi/public/servicedesk/error";
+          window.location.href = "http://192.168.10.157/sinerghi/public/servicedesk/error";
         }, 5000);
         
         return () => clearTimeout(timer);

@@ -83,9 +83,9 @@ export class DatabaseStorage implements IStorage {
       schema: {
         tableName: 'zoom_sessions',
         columnNames: {
-          session_id: 'sid',
-          expires: 'expire',
-          data: 'sess'
+          session_id: 'session_id',
+          expires: 'expires',
+          data: 'data'
         }
       }
     });
