@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Calendar, Monitor, Users, Trash2 } from "lucide-react";
-import { BadgePlus } from "lucide-react";
+import { Loader2, User, Calendar, Monitor, Users, Trash2, BadgePlus, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useSidebarCollapse } from '@/contexts/SidebarCollapseContext';
@@ -28,6 +27,7 @@ import { Label } from "@/components/ui/label"
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import AdminAccounts from "./accounts"; // Import AdminAccounts
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username minimal 3 karakter"),
@@ -164,42 +164,49 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+              <div className="grid gap-4 md:grid-cols-3 mb-6">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Pengguna</CardTitle>
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-                  </CardContent>
+                  <div className="p-6">
+                    <div className="flex items-center">
+                      <div className="bg-green-100 p-3 rounded-full mr-4">
+                        <Monitor className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Akun Tersedia Hari Ini</p>
+                        <p className="text-2xl font-bold">{stats?.activeZoomAccounts || 0} Akun</p>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Pemesanan</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.totalBookings || 0}</div>
-                  </CardContent>
+                  <div className="p-6">
+                    <div className="flex items-center">
+                      <div className="bg-blue-100 p-3 rounded-full mr-4">
+                        <Calendar className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Pemesanan Aktif</p>
+                        <p className="text-2xl font-bold">
+                          {stats?.latestBookings?.filter(b => b.status === 'confirmed').length || 0} Aktif
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Akun Zoom Aktif</CardTitle>
-                    <Monitor className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.activeZoomAccounts || 0}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Akun Zoom Nonaktif</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.inactiveZoomAccounts || 0}</div>
-                  </CardContent>
+                  <div className="p-6">
+                    <div className="flex items-center">
+                      <div className="bg-yellow-100 p-3 rounded-full mr-4">
+                        <Clock className="h-6 w-6 text-yellow-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Pemesanan Pending</p>
+                        <p className="text-2xl font-bold">
+                          {stats?.pendingBookings || 0} Menunggu
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
               </div>
               
@@ -211,56 +218,7 @@ export default function AdminDashboard() {
                 </TabsList>
                 
                 <TabsContent value="accounts" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold">Kelola Akun Zoom</h2>
-                    <Button asChild>
-                      <Link href="/admin/accounts/new">
-                        <BadgePlus className="h-4 w-4 mr-2" />
-                        Tambah Akun Zoom
-                      </Link>
-                    </Button>
-                  </div>
-                  
-                  <Card>
-                    <CardContent className="p-0">
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-neutral-100">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Akun</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200 bg-white">
-                            {stats?.accountsWithStatus?.map((account) => (
-                              <tr key={account.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm font-medium">{account.name}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm">{account.username}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <Badge variant={account.isActive ? "outline" : "secondary"}>
-                                    {account.isActive ? "Aktif" : "Nonaktif"}
-                                  </Badge>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right">
-                                  <Button variant="ghost" size="sm" asChild>
-                                    <Link href={`/admin/accounts/${account.id}/edit`}>
-                                      <Edit className="h-4 w-4" />
-                                    </Link>
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <AdminAccounts />
                 </TabsContent>
                 
                 <TabsContent value="bookings" className="space-y-4">

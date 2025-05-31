@@ -4,10 +4,22 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { hashPassword } from "./auth";
 import { z } from "zod";
-import { insertBookingSchema } from "@shared/schema";
+import { insertBookingSchema, User, ZoomAccount, Booking } from "@shared/schema";
 import { insertUserSchema } from "@shared/schema";
 import { db, pool } from "./db";
 import { sql } from "drizzle-orm";
+
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      username_ldap: string;
+      role_id: number;
+      name?: string;
+      department?: string;
+    }
+  }
+}
 
 // Schema untuk permintaan booking publik
 const publicBookingSchema = z.object({
@@ -34,34 +46,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin middleware
   const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
+    console.log(`[AUTH_ADMIN] Attempting admin authentication for path: ${req.path}`);
     if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      console.log('[AUTH_ADMIN] User not authenticated or req.user is missing.');
+      return res.status(401).json({ message: "Unauthorized: Authentication required." });
     }
 
-    console.log('Admin check - User:', {
-      id: req.user.id,
-      username_ldap: req.user.username_ldap,
-      role_id: req.user.role_id,
-      role_id_type: typeof req.user.role_id
-    });
+    console.log(`[AUTH_ADMIN] User authenticated: ${req.user.username_ldap}, Role ID: ${req.user.role_id}`);
 
-    if (req.user.role_id != 1) { // Menggunakan perbandingan longgar (==) karena mungkin tipe datanya berbeda
-      console.log('Access denied - role_id is not 1');
-      return res.status(403).json({ message: "Akses ditolak, hak akses admin diperlukan" });
+    // IMPORTANT: Confirm '1' is the correct admin role_id from your database schema.
+    // If your admin role_id is different, update this check.
+    if (req.user.role_id !== 1) {
+      console.log(`[AUTH_ADMIN] Forbidden: User ${req.user.username_ldap} with role_id ${req.user.role_id} is not an admin.`);
+      return res.status(403).json({ message: "Forbidden: Insufficient privileges." });
     }
 
-    console.log('Admin access granted');
+    console.log(`[AUTH_ADMIN] Access GRANTED for admin user ${req.user.username_ldap} to path: ${req.path}`);
     next();
   };
 
   // API routes for Zoom account management
 
   // Get all Zoom accounts with their status
-  app.get("/api/zoom-accounts", authenticateUser, async (req, res, next) => {
+  app.get("/api/admin/accounts", authenticateAdmin, async (req, res, next) => {
+    console.log(`[ROUTE_HANDLER] Entered GET /api/admin/accounts for user: ${req.user?.username_ldap}`); // New Entry Log
     try {
       const accounts = await storage.getAllZoomAccounts();
+      console.log('[ROUTE_HANDLER] GET /api/admin/accounts - Fetched accounts count:', accounts.length);
+      if (accounts.length > 0) {
+        console.log('[ROUTE_HANDLER] GET /api/admin/accounts - First account (sample):', JSON.stringify(accounts[0], null, 2)); // Stringify for better object logging
+      }
       res.json(accounts);
     } catch (error) {
+      console.error('[ROUTE_HANDLER_ERROR] GET /api/admin/accounts - Error:', error);
       next(error);
     }
   });
@@ -81,6 +98,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(account);
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Admin stats endpoint
+  app.get("/api/admin/stats", authenticateAdmin, async (req, res) => {
+    try {
+      const [
+        totalBookings,
+        totalUsers,
+        zoomAccounts,
+        bookings,
+        users
+      ] = await Promise.all([
+        storage.getTotalBookings(),
+        storage.getTotalUsers(),
+        storage.getAllZoomAccounts(),
+        storage.getLatestBookings(10), // Get last 10 bookings
+        storage.getAllUsers()
+      ]) as [number, number, ZoomAccount[], Booking[], User[]];
+
+      const activeZoomAccounts = zoomAccounts.filter((acc: ZoomAccount) => acc.isActive).length;
+      const inactiveZoomAccounts = zoomAccounts.filter((acc: ZoomAccount) => !acc.isActive).length;
+      const pendingBookings = bookings.filter((b: Booking) => b.status === 'pending').length;
+      const completedBookings = bookings.filter((b: Booking) => b.status === 'completed').length;
+
+      res.json({
+        totalBookings,
+        totalUsers,
+        activeZoomAccounts,
+        inactiveZoomAccounts,
+        pendingBookings,
+        completedBookings,
+        accountsWithStatus: zoomAccounts.map((acc: ZoomAccount) => ({
+          id: acc.id,
+          name: acc.name,
+          username: acc.username,
+          isActive: acc.isActive
+        })),
+        latestBookings: bookings.map((booking: Booking) => ({
+          id: booking.id,
+          meetingTitle: booking.meetingTitle,
+          meetingDate: booking.meetingDate,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          status: booking.status,
+          zoomAccount: booking.zoomAccountId ? {
+            name: zoomAccounts.find((a: ZoomAccount) => a.id === booking.zoomAccountId)?.name || 'Unknown'
+          } : undefined
+        })),
+        users: users.map((user: User) => ({
+          id: user.id,
+          name: user.name || '',
+          username: user.username_ldap,
+          department: user.department || '',
+          role_id: user.role_id
+        }))
+      });
+    } catch (error) {
+      console.error('Error getting admin stats:', error);
+      res.status(500).json({ message: 'Failed to get admin stats' });
     }
   });
 
@@ -341,11 +418,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create the booking
         const { booking, zoomAccount } = await storage.createBooking(bookingData);
 
-        if (!booking || !zoomAccount) {
+        if (!booking) {
           await connection.rollback();
-          return res.status(400).json({
+          return res.status(500).json({
             success: false,
-            message: "Tidak ada akun Zoom yang tersedia, silakan coba jadwal lain atau hubungi admin."
+            message: "Gagal membuat booking. Silakan coba lagi nanti."
+          });
+        }
+
+        // Check if booking is pending (no Zoom account available)
+        if (booking.status === 'pending') {
+          // Update ticket status to indicate pending Zoom account
+          const now = new Date();
+          now.setHours(now.getHours() + 7); // Convert to WIB (UTC+7)
+          const currentTime = now.toISOString().slice(0, 19).replace('T', ' ');
+
+          await connection.query(
+            `UPDATE tiket 
+             SET status = 5,  // Status 5 untuk menandakan menunggu akun Zoom
+                 id_pj = 0,
+                 tanggal_status_terkini = ?,
+                 updated_at = ?
+             WHERE kode_tiket = ?`,
+            [currentTime, currentTime, validatedData.kodeTiket]
+          );
+
+          console.log('Created pending booking with ID:', booking.id);
+          
+          await connection.commit();
+          return res.status(202).json({
+            success: true,
+            message: "Booking berhasil dibuat dan sedang menunggu ketersediaan akun Zoom. Anda akan diberitahu begitu akun tersedia.",
+            data: {
+              bookingId: booking.id,
+              status: 'pending',
+              meetingTitle: booking.meetingTitle,
+              meetingDate: booking.meetingDate,
+              startTime: booking.startTime,
+              endTime: booking.endTime
+            }
           });
         }
 
@@ -506,10 +617,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Enhance booking with Zoom account details if assigned
-      let enhancedBooking = { ...booking, zoomAccount: null };
+      let enhancedBooking = { ...booking, zoomAccount: null as ZoomAccount | null };
       if (booking.zoomAccountId) {
         const zoomAccount = await storage.getZoomAccount(booking.zoomAccountId);
-        enhancedBooking.zoomAccount = zoomAccount || null;
+        if (zoomAccount) {
+          enhancedBooking.zoomAccount = zoomAccount;
+        }
       }
 
       res.json(enhancedBooking);

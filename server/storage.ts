@@ -35,7 +35,7 @@ export interface IStorage {
   updateZoomAccount(id: number, account: Partial<ZoomAccount>): Promise<ZoomAccount | undefined>;
   
   // Booking operations
-  createBooking(booking: InsertBooking): Promise<Booking>;
+  createBooking(booking: InsertBooking): Promise<{booking: Booking | null, zoomAccount: ZoomAccount | null}>;
   getBooking(id: number): Promise<Booking | undefined>;
   getBookingsByUserId(userId: number): Promise<Booking[]>;
   getAllBookings(): Promise<Booking[]>;
@@ -197,6 +197,24 @@ export class DatabaseStorage implements IStorage {
   async getAllZoomAccounts(): Promise<ZoomAccount[]> {
     return await db.select().from(zoomAccounts);
   }
+
+  async getTotalBookings(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(bookings);
+    return result[0]?.count || 0;
+  }
+
+  async getTotalUsers(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+    return result[0]?.count || 0;
+  }
+
+  async getLatestBookings(limit: number): Promise<Booking[]> {
+    return await db
+      .select()
+      .from(bookings)
+      .orderBy(desc(bookings.createdAt))
+      .limit(limit);
+  }
   
   async createZoomAccount(account: InsertZoomAccount): Promise<ZoomAccount> {
     const result = await db.insert(zoomAccounts).values(account);
@@ -220,9 +238,16 @@ export class DatabaseStorage implements IStorage {
       insertBooking.endTime
     );
     
-    // Jika tidak ada akun yang tersedia, return null untuk booking
+    // Jika tidak ada akun yang tersedia, simpan booking dengan status pending
     if (!availableAccount) {
-      return { booking: null, zoomAccount: null };
+      const result = await db.insert(bookings).values({
+        ...insertBooking,
+        status: "pending"
+      });
+      
+      const insertId = getInsertId(result);
+      const [booking] = await db.select().from(bookings).where(eq(bookings.id, insertId));
+      return { booking, zoomAccount: null };
     }
     
     // Jika ada akun yang tersedia, buat booking baru dengan status confirmed
